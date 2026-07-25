@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api") // ここで "/api" を指定している
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class PlaceController {
@@ -18,6 +18,13 @@ public class PlaceController {
     
     @Value("${google.places.api-key}")
     private String apiKey;
+
+    // 生存確認用 (URL: /api/ping)
+    // パスを "/ping" だけにすることで、クラス側の "/api" と合わさって "/api/ping" になります
+    @GetMapping("/ping")
+    public ResponseEntity<Void> ping() {
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/categories")
     public List<Category> getCategories() { 
@@ -31,9 +38,7 @@ public class PlaceController {
             @RequestParam(required = false) String location,
             @RequestParam List<String> categoryIds,
             @RequestParam(defaultValue = "rating") String sortBy,
-            @RequestParam(defaultValue = "false") boolean independentOnly) { // ここに引数を追加
-        
-        // Serviceを呼ぶ際、最後に independentOnly を渡すように修正
+            @RequestParam(defaultValue = "false") boolean independentOnly) {
         return placeService.search(lat, lng, location, categoryIds, sortBy, independentOnly);
     }
 

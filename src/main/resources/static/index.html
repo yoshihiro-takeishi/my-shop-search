@@ -3,75 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>気分でお店検索 Pro Max</title>
+    <title>Lumiére | 直感でお店検索</title>
+    <!-- PWA 設定 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Lumiére">
+    <!-- アイコンライブラリとフォントの読み込み -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;700&family=Quicksand:wght@500&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #ff4757; --secondary: #2ed573; --bg: #f1f2f6; --dark: #2f3542; }
-        body { font-family: "Hiragino Sans", "Meiryo", sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); }
-        .header { background: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
-        
-        .panel { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        
-        /* カテゴリ画像カード */
+        :root {
+            --primary-pink: #f8a5c2;
+            --accent-gold: #d4a373;
+            --bg-cream: #faf9f8;
+            --text-main: #574b90;
+            --text-sub: #a5a5a5;
+            --white: #ffffff;
+            --shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: "M PLUS Rounded 1c", sans-serif;
+            background-color: var(--bg-cream);
+            margin: 0; padding: 0;
+            color: var(--text-main);
+            -webkit-tap-highlight-color: transparent; /* スマホのタップ跡を消す */
+        }
+
+        .container { max-width: 480px; margin: 0 auto; padding: 20px 15px 100px; }
+
+        .header { text-align: center; padding: 30px 0; }
+        .header h1 { font-size: 1.8em; letter-spacing: 4px; margin: 0; font-weight: 700; color: var(--text-main); }
+        .header i { color: var(--primary-pink); font-size: 1.2em; margin-bottom: 10px; }
+
+        /* 入力エリアのカード */
+        .card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 0.85em; font-weight: 700; color: var(--accent-gold);
+            margin-bottom: 15px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper i { position: absolute; left: 15px; color: var(--primary-pink); }
+        input[type="text"] {
+            width: 100%; padding: 12px 15px 12px 40px; border-radius: 15px;
+            border: 1px solid #f0f0f0; background: #fdfdfd; font-size: 1em; outline: none;
+        }
+
+        /* カテゴリグリッド */
         .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 15px 0; }
-        .cat-card { 
-            position: relative; height: 100px; border-radius: 12px; overflow: hidden; 
-            cursor: pointer; border: 3px solid transparent; transition: 0.3s;
+        .cat-item {
+            position: relative; height: 110px; border-radius: 20px; overflow: hidden;
+            cursor: pointer; transition: 0.3s;
         }
-        .cat-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; filter: brightness(0.7); }
-        .cat-card span { 
+        .cat-item img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.7); transition: 0.3s; }
+        .cat-item span {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: white; font-weight: bold; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0,0,0,0.8); width: 90%; text-align: center;
+            color: white; font-weight: bold; font-size: 0.9em; text-align: center; width: 90%;
         }
-        .cat-card.active { border-color: var(--primary); transform: scale(1.03); }
-        .cat-card.active img { filter: brightness(0.9); }
-
-        .main-search-btn { 
-            width: 100%; padding: 18px; background: var(--primary); color: white; border: none; 
-            border-radius: 12px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin: 10px 0; 
-            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        .cat-item.active { transform: scale(0.95); }
+        .cat-item.active img { filter: brightness(0.9); }
+        .cat-item.active::after {
+            content: '\f004'; font-family: "Font Awesome 6 Free"; font-weight: 900;
+            position: absolute; top: 10px; right: 10px; color: var(--primary-pink);
+            background: white; width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 0.7em;
         }
 
-        .shop-card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
-        .shop-img { width: 100%; height: 220px; object-fit: cover; background: #eee; }
-        .shop-info { padding: 20px; }
-        .shop-name { font-size: 1.3em; font-weight: 800; margin: 0; color: var(--dark); }
-        
-        .badge-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-        .rating-badge { background: #fff9db; color: #fab005; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.9em; }
-        
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn { padding: 12px; border-radius: 10px; text-decoration: none; text-align: center; font-weight: bold; font-size: 0.9em; border: none; }
-        .btn-map { background: #f1f2f6; color: var(--dark); }
-        .btn-route { background: var(--secondary); color: white; }
-        
-        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 1em; background: #f8f9fa; }
-        .label { font-size: 0.8em; font-weight: bold; color: #a1a1a1; margin-bottom: 5px; display: block; margin-top: 15px; }
+        /* トグルスイッチ（個人店フィルター） */
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #fff8f9; padding: 12px 20px; border-radius: 20px; margin: 20px 0;
+        }
+        .switch {
+            position: relative; display: inline-block; width: 44px; height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #eee; transition: .4s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary-pink); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* 検索ボタン */
+        .search-btn {
+            width: 100%; padding: 18px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, #f8a5c2 0%, #f78fb3 100%);
+            color: white; font-size: 1.1em; font-weight: bold; cursor: pointer;
+            box-shadow: 0 8px 20px rgba(248, 165, 194, 0.4); display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        /* セレクトボックスの横並び */
+        .settings-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        select {
+            width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #eee;
+            background: #fff; font-size: 0.85em; color: var(--text-main); outline: none;
+        }
+
+        /* 結果カード */
+        .shop-card {
+            background: var(--white); border-radius: 30px; overflow: hidden;
+            margin-bottom: 25px; box-shadow: var(--shadow); transition: 0.3s;
+        }
+        .shop-img { width: 100%; height: 200px; object-fit: cover; }
+        .shop-content { padding: 20px; }
+        .shop-title { font-size: 1.15em; font-weight: bold; margin: 0 0 8px; }
+        .shop-stats { display: flex; gap: 15px; font-size: 0.85em; color: var(--accent-gold); margin-bottom: 12px; }
+        .shop-address { font-size: 0.8em; color: var(--text-sub); display: flex; gap: 5px; line-height: 1.4; }
+
+        .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn {
+            padding: 12px; border-radius: 15px; text-decoration: none; text-align: center;
+            font-size: 0.85em; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-info { background: #fdf2f2; color: var(--primary-pink); }
+        .btn-go { background: var(--text-main); color: white; }
+
+        .loading-ui { text-align: center; padding: 40px; color: var(--text-sub); }
+        .loading-ui i { font-size: 2em; margin-bottom: 10px; color: var(--primary-pink); display: block; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1 style="margin:0; font-size:1.5em; color:var(--primary);">🍴 気分でお店検索</h1>
-</div>
-
 <div class="container">
-    <div class="panel">
-        <span class="label">🔍 どこで探す？</span>
-        <input type="text" id="areaInput" placeholder="現在地周辺、または駅名など">
-        
-        <span class="label">💡 今日の気分は？（複数OK）</span>
-        <div id="categoryGrid" class="category-grid"></div>
-        
-        <label style="display:flex; align-items:center; cursor:pointer; color:var(--primary); font-weight:bold; font-size:0.85em; margin:15px 0;">
-            <input type="checkbox" id="independentOnly" style="width:auto; margin-right:8px;"> 隠れ家・個人店を優先
-        </label>
+    <div class="header">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <h1>Lumiére</h1>
+    </div>
 
-        <button onclick="search()" class="main-search-btn">この気分のお店を見つける！</button>
+    <div class="card">
+        <div class="section-title"><i class="fa-solid fa-location-dot"></i> どこで探す？</div>
+        <div class="input-wrapper">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="areaInput" placeholder="現在地、または駅名など">
+        </div>
 
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1;"><span class="label">並び順</span><select id="sortBy"><option value="rating">評価が高い</option><option value="distance">近い順</option><option value="userRatingsTotal">口コミ多</option></select></div>
-            <div style="flex:1;"><span class="label">移動手段</span><select id="travelMode"><option value="walking">徒歩</option><option value="driving">車</option><option value="transit">電車</option></select></div>
+        <div class="section-title" style="margin-top:25px;"><i class="fa-solid fa-heart"></i> 今日の気分は？</div>
+        <div id="categoryGrid" class="category-grid">
+            <!-- JSで生成 -->
+        </div>
+
+        <div class="toggle-row">
+            <span style="font-size:0.85em; font-weight:bold;"><i class="fa-solid fa-leaf" style="color:var(--secondary-green); margin-right:5px;"></i> 個人店・隠れ家を優先</span>
+            <label class="switch">
+                <input type="checkbox" id="independentOnly" onchange="saveSettings()">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button onclick="search()" class="search-btn">
+            <i class="fa-solid fa-face-smile-wink"></i> お店を見つける
+        </button>
+
+        <div class="settings-row">
+            <div>
+                <div class="section-title" style="font-size:0.7em; margin-bottom:5px;"><i class="fa-solid fa-arrow-down-wide-short"></i> 並び順</div>
+                <select id="sortBy" onchange="saveSettings()">
+                    <option value="rating">評価が高い順</option>
+                    <option value="distance">近い順</option>
+                    <option value="userRatingsTotal">口コミ数順</option>
+                </select>
+            </div>
+            <div>
+                <div class="section-title" style="font-size:0.7em; margin-bottom:5px;"><i class="fa-solid fa-train-subway"></i> 移動手段</div>
+                <select id="travelMode" onchange="saveSettings()">
+                    <option value="walking">徒歩</option>
+                    <option value="driving">車</option>
+                    <option value="transit">電車</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -80,31 +193,37 @@
 
 <script>
     let userLoc = null; let selectedCats = new Set();
+    
     window.onload = () => {
         loadSettings(); fetchCategories();
-        if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p => userLoc = { lat: p.coords.latitude, lng: p.coords.longitude });
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                p => userLoc = { lat: p.coords.latitude, lng: p.coords.longitude },
+                e => console.warn("位置情報オフ")
+            );
+        }
     };
 
     async function fetchCategories() {
         const res = await fetch('/api/categories'); const data = await res.json();
         const grid = document.getElementById('categoryGrid');
         data.forEach(cat => {
-            const card = document.createElement('div');
-            card.className = 'cat-card'; card.id = `cat-${cat.id}`;
-            card.innerHTML = `<img src="${cat.imageUrl}"><span>${cat.label}</span>`;
-            card.onclick = () => {
+            const item = document.createElement('div');
+            item.className = 'cat-item'; item.id = `cat-${cat.id}`;
+            item.innerHTML = `<img src="${cat.imageUrl}"><span>${cat.label}</span>`;
+            item.onclick = () => {
                 selectedCats.has(cat.id) ? selectedCats.delete(cat.id) : selectedCats.add(cat.id);
-                card.classList.toggle('active');
+                item.classList.toggle('active');
             };
-            grid.appendChild(card);
+            grid.appendChild(item);
         });
     }
 
     async function search() {
-        if (selectedCats.size === 0) return alert("気分を選んでね！");
+        if (selectedCats.size === 0) return alert("気分をえらんでね！");
         saveSettings();
         const resDiv = document.getElementById('results');
-        resDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">美味しいお店を探し中...</div>';
+        resDiv.innerHTML = '<div class="loading-ui"><i class="fa-solid fa-spinner fa-spin"></i>探しています...</div>';
         
         const params = new URLSearchParams({ sortBy: document.getElementById('sortBy').value, independentOnly: document.getElementById('independentOnly').checked });
         selectedCats.forEach(id => params.append('categoryIds', id));
@@ -112,46 +231,64 @@
         if (userLoc) { params.append('lat', userLoc.lat); params.append('lng', userLoc.lng); }
 
         try {
-            const res = await fetch(`/api/places/search?${params.toString()}`); const shops = await res.json();
-            renderShops(shops); resDiv.scrollIntoView({ behavior: 'smooth' });
-        } catch (e) { resDiv.innerHTML = '<p style="text-align:center; color:red;">エラーが発生しました</p>'; }
+            const res = await fetch(`/api/places/search?${params.toString()}`);
+            const shops = await res.json();
+            renderShops(shops);
+            resDiv.scrollIntoView({ behavior: 'smooth' });
+        } catch (e) { resDiv.innerHTML = '<p style="text-align:center;">エラー...</p>'; }
     }
 
     function renderShops(shops) {
         const resDiv = document.getElementById('results');
-        if (shops.length === 0) return resDiv.innerHTML = '<p style="text-align:center; padding:40px;">見つかりませんでした😭</p>';
+        if (shops.length === 0) return resDiv.innerHTML = '<p style="text-align:center; padding:40px;">見つかりませんでした 😢</p>';
         const mode = document.getElementById('travelMode').value;
+        
         resDiv.innerHTML = shops.map(shop => `
             <div class="shop-card">
                 <img class="shop-img" src="${shop.photoReference ? `/api/places/photo?photoName=${shop.photoReference}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80'}" loading="lazy">
-                <div class="shop-info">
-                    <p class="shop-name">${shop.name}</p>
-                    <div class="badge-row">
-                        <span class="rating-badge">★ ${shop.rating || '---'}</span>
-                        <span style="font-size:0.8em; color:#888;">(${shop.userRatingCount} reviews)</span>
+                <div class="shop-content">
+                    <p class="shop-title">${shop.name}</p>
+                    <div class="shop-stats">
+                        <span><i class="fa-solid fa-star"></i> ${shop.rating || '---'}</span>
+                        <span><i class="fa-solid fa-comment-dots"></i> ${shop.userRatingCount}件</span>
+                        ${shop.distanceMeters ? `<span><i class="fa-solid fa-person-walking"></i> 約${shop.distanceMeters}m</span>` : ''}
                     </div>
-                    <div style="font-size:0.85em; color:#636e72; margin-top:12px; line-height:1.5;">
-                        ${shop.distanceMeters ? `<b>📍 約 ${shop.distanceMeters}m</b><br>` : ''}${shop.address}
+                    <div class="shop-address">
+                        <i class="fa-solid fa-map-pin" style="margin-top:3px;"></i>
+                        <span>${shop.address}</span>
                     </div>
-                    <div class="btn-group">
-                        <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-map">Googleマップ</a>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-route">${getModeLabel(mode)}ルート</a>
+                    <div class="action-btns">
+                        <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-info"><i class="fa-solid fa-circle-info"></i> 詳細</a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-go"><i class="fa-solid fa-location-arrow"></i> 行き方</a>
                     </div>
                 </div>
             </div>
         `).join('');
     }
 
-    function getModeLabel(m) { return {walking:'徒歩', driving:'車', transit:'電車'}[m]; }
     function saveSettings() {
-        localStorage.setItem('shop_pro_max', JSON.stringify({ area: document.getElementById('areaInput').value, sortBy: document.getElementById('sortBy').value, mode: document.getElementById('travelMode').value, independent: document.getElementById('independentOnly').checked }));
+        localStorage.setItem('shop_lumiere_v3', JSON.stringify({ 
+            area: document.getElementById('areaInput').value, 
+            sortBy: document.getElementById('sortBy').value, 
+            mode: document.getElementById('travelMode').value, 
+            independent: document.getElementById('independentOnly').checked 
+        }));
     }
     function loadSettings() {
-        const saved = JSON.parse(localStorage.getItem('shop_pro_max') || '{}');
+        const saved = JSON.parse(localStorage.getItem('shop_lumiere_v3') || '{}');
         if (saved.area) document.getElementById('areaInput').value = saved.area;
         if (saved.sortBy) document.getElementById('sortBy').value = saved.sortBy;
         if (saved.mode) document.getElementById('travelMode').value = saved.mode;
         if (saved.independent) document.getElementById('independentOnly').checked = saved.independent;
+    }
+
+    // Service Worker の登録
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('PWA準備完了'))
+                .catch(err => console.log('PWA失敗', err));
+        });
     }
 </script>
 </body>
