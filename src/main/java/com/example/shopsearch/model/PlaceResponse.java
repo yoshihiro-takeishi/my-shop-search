@@ -1,16 +1,21 @@
 package com.example.shopsearch.model;
+import java.util.List;
 
-/**
- * 店舗検索結果レスポンス
- */
 public record PlaceResponse(
+    String id,
     String name,
     Double rating,
     Integer userRatingCount,
     String address,
     String googleMapsUrl,
     Integer distanceMeters,
-    String photoReference, // 写真取得用のID
-    Double lat,            // ルート案内用（緯度）
-    Double lng             // ルート案内用（経度）
+    String photoReference,
+    Double lat,
+    Double lng,
+    String priceLevel,
+    Boolean openNow,
+    String summary,
+    String websiteUri,
+    String reviewSnippet,
+    List<String> businessHours
 ) {}

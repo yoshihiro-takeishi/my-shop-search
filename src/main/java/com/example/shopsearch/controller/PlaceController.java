@@ -7,9 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.ArrayList;
 
 @RestController
-@RequestMapping("/api") // ここで "/api" を指定している
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class PlaceController {
@@ -19,27 +20,25 @@ public class PlaceController {
     @Value("${google.places.api-key}")
     private String apiKey;
 
-    // 生存確認用 (URL: /api/ping)
-    // パスを "/ping" だけにすることで、クラス側の "/api" と合わさって "/api/ping" になります
     @GetMapping("/ping")
-    public ResponseEntity<Void> ping() {
-        return ResponseEntity.noContent().build();
-    }
+    public ResponseEntity<Void> ping() { return ResponseEntity.noContent().build(); }
 
     @GetMapping("/categories")
-    public List<Category> getCategories() { 
-        return categoryService.getAllCategories(); 
-    }
+    public List<Category> getCategories() { return categoryService.getAllCategories(); }
 
     @GetMapping("/places/search")
     public List<PlaceResponse> search(
             @RequestParam(required = false) Double lat,
             @RequestParam(required = false) Double lng,
             @RequestParam(required = false) String location,
-            @RequestParam List<String> categoryIds,
+            @RequestParam(required = false) List<String> categoryIds,
+            @RequestParam(required = false) String storeName,
             @RequestParam(defaultValue = "rating") String sortBy,
             @RequestParam(defaultValue = "false") boolean independentOnly) {
-        return placeService.search(lat, lng, location, categoryIds, sortBy, independentOnly);
+        
+        // categoryIds が null の場合に空のリストを作成
+        List<String> cats = (categoryIds != null) ? categoryIds : new ArrayList<>();
+        return placeService.search(lat, lng, location, cats, storeName, sortBy, independentOnly);
     }
 
     @GetMapping("/places/photo")

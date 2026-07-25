@@ -1,21 +1,12 @@
 {
-  "name": "Lumiére - 気分でお店検索",
-  "short_name": "Lumiére",
-  "description": "今の気分にぴったりなお店を直感的に探せるアプリ",
+  "name": "お店探しナビ",
+  "short_name": "お店ナビ",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#faf9f8",
-  "theme_color": "#f8a5c2",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
   "icons": [
-    {
-        "src": "/icon-512.png",
-        "sizes": "512x512",
-        "type": "image/png"
-    },
-    {
-        "src": "/icon-512.png",
-        "sizes": "192x192",
-        "type": "image/png"
-    }
+    { "src": "https://cdn-icons-png.flaticon.com/512/3075/3075977.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "https://cdn-icons-png.flaticon.com/512/3075/3075977.png", "sizes": "512x512", "type": "image/png" }
   ]
 }

@@ -5,5 +5,5 @@ public record Category(
     String id, 
     String label, 
     List<String> keywords,
-    String imageUrl // カテゴリの背景画像用URLを追加
+    String icon // FontAwesomeのクラス名
 ) {}
