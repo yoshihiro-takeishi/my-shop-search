@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>気分でお店検索 Pro Max</title>
+    <style>
+        :root { --primary: #ff4757; --secondary: #2ed573; --bg: #f1f2f6; --dark: #2f3542; }
+        body { font-family: "Hiragino Sans", "Meiryo", sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--dark); }
+        .header { background: white; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
+        
+        .panel { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        
+        /* カテゴリ画像カード */
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 15px 0; }
+        .cat-card { 
+            position: relative; height: 100px; border-radius: 12px; overflow: hidden; 
+            cursor: pointer; border: 3px solid transparent; transition: 0.3s;
+        }
+        .cat-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; filter: brightness(0.7); }
+        .cat-card span { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-weight: bold; font-size: 0.9em; text-shadow: 0 2px 4px rgba(0,0,0,0.8); width: 90%; text-align: center;
+        }
+        .cat-card.active { border-color: var(--primary); transform: scale(1.03); }
+        .cat-card.active img { filter: brightness(0.9); }
+
+        .main-search-btn { 
+            width: 100%; padding: 18px; background: var(--primary); color: white; border: none; 
+            border-radius: 12px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin: 10px 0; 
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .shop-card { background: white; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        .shop-img { width: 100%; height: 220px; object-fit: cover; background: #eee; }
+        .shop-info { padding: 20px; }
+        .shop-name { font-size: 1.3em; font-weight: 800; margin: 0; color: var(--dark); }
+        
+        .badge-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+        .rating-badge { background: #fff9db; color: #fab005; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 0.9em; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn { padding: 12px; border-radius: 10px; text-decoration: none; text-align: center; font-weight: bold; font-size: 0.9em; border: none; }
+        .btn-map { background: #f1f2f6; color: var(--dark); }
+        .btn-route { background: var(--secondary); color: white; }
+        
+        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 1em; background: #f8f9fa; }
+        .label { font-size: 0.8em; font-weight: bold; color: #a1a1a1; margin-bottom: 5px; display: block; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 style="margin:0; font-size:1.5em; color:var(--primary);">🍴 気分でお店検索</h1>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <span class="label">🔍 どこで探す？</span>
+        <input type="text" id="areaInput" placeholder="現在地周辺、または駅名など">
+        
+        <span class="label">💡 今日の気分は？（複数OK）</span>
+        <div id="categoryGrid" class="category-grid"></div>
+        
+        <label style="display:flex; align-items:center; cursor:pointer; color:var(--primary); font-weight:bold; font-size:0.85em; margin:15px 0;">
+            <input type="checkbox" id="independentOnly" style="width:auto; margin-right:8px;"> 隠れ家・個人店を優先
+        </label>
+
+        <button onclick="search()" class="main-search-btn">この気分のお店を見つける！</button>
+
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;"><span class="label">並び順</span><select id="sortBy"><option value="rating">評価が高い</option><option value="distance">近い順</option><option value="userRatingsTotal">口コミ多</option></select></div>
+            <div style="flex:1;"><span class="label">移動手段</span><select id="travelMode"><option value="walking">徒歩</option><option value="driving">車</option><option value="transit">電車</option></select></div>
+        </div>
+    </div>
+
+    <div id="results"></div>
+</div>
+
+<script>
+    let userLoc = null; let selectedCats = new Set();
+    window.onload = () => {
+        loadSettings(); fetchCategories();
+        if (navigator.geolocation) navigator.geolocation.getCurrentPosition(p => userLoc = { lat: p.coords.latitude, lng: p.coords.longitude });
+    };
+
+    async function fetchCategories() {
+        const res = await fetch('/api/categories'); const data = await res.json();
+        const grid = document.getElementById('categoryGrid');
+        data.forEach(cat => {
+            const card = document.createElement('div');
+            card.className = 'cat-card'; card.id = `cat-${cat.id}`;
+            card.innerHTML = `<img src="${cat.imageUrl}"><span>${cat.label}</span>`;
+            card.onclick = () => {
+                selectedCats.has(cat.id) ? selectedCats.delete(cat.id) : selectedCats.add(cat.id);
+                card.classList.toggle('active');
+            };
+            grid.appendChild(card);
+        });
+    }
+
+    async function search() {
+        if (selectedCats.size === 0) return alert("気分を選んでね！");
+        saveSettings();
+        const resDiv = document.getElementById('results');
+        resDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">美味しいお店を探し中...</div>';
+        
+        const params = new URLSearchParams({ sortBy: document.getElementById('sortBy').value, independentOnly: document.getElementById('independentOnly').checked });
+        selectedCats.forEach(id => params.append('categoryIds', id));
+        if (document.getElementById('areaInput').value) params.append('location', document.getElementById('areaInput').value);
+        if (userLoc) { params.append('lat', userLoc.lat); params.append('lng', userLoc.lng); }
+
+        try {
+            const res = await fetch(`/api/places/search?${params.toString()}`); const shops = await res.json();
+            renderShops(shops); resDiv.scrollIntoView({ behavior: 'smooth' });
+        } catch (e) { resDiv.innerHTML = '<p style="text-align:center; color:red;">エラーが発生しました</p>'; }
+    }
+
+    function renderShops(shops) {
+        const resDiv = document.getElementById('results');
+        if (shops.length === 0) return resDiv.innerHTML = '<p style="text-align:center; padding:40px;">見つかりませんでした😭</p>';
+        const mode = document.getElementById('travelMode').value;
+        resDiv.innerHTML = shops.map(shop => `
+            <div class="shop-card">
+                <img class="shop-img" src="${shop.photoReference ? `/api/places/photo?photoName=${shop.photoReference}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80'}" loading="lazy">
+                <div class="shop-info">
+                    <p class="shop-name">${shop.name}</p>
+                    <div class="badge-row">
+                        <span class="rating-badge">★ ${shop.rating || '---'}</span>
+                        <span style="font-size:0.8em; color:#888;">(${shop.userRatingCount} reviews)</span>
+                    </div>
+                    <div style="font-size:0.85em; color:#636e72; margin-top:12px; line-height:1.5;">
+                        ${shop.distanceMeters ? `<b>📍 約 ${shop.distanceMeters}m</b><br>` : ''}${shop.address}
+                    </div>
+                    <div class="btn-group">
+                        <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-map">Googleマップ</a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-route">${getModeLabel(mode)}ルート</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function getModeLabel(m) { return {walking:'徒歩', driving:'車', transit:'電車'}[m]; }
+    function saveSettings() {
+        localStorage.setItem('shop_pro_max', JSON.stringify({ area: document.getElementById('areaInput').value, sortBy: document.getElementById('sortBy').value, mode: document.getElementById('travelMode').value, independent: document.getElementById('independentOnly').checked }));
+    }
+    function loadSettings() {
+        const saved = JSON.parse(localStorage.getItem('shop_pro_max') || '{}');
+        if (saved.area) document.getElementById('areaInput').value = saved.area;
+        if (saved.sortBy) document.getElementById('sortBy').value = saved.sortBy;
+        if (saved.mode) document.getElementById('travelMode').value = saved.mode;
+        if (saved.independent) document.getElementById('independentOnly').checked = saved.independent;
+    }
+</script>
+</body>
+</html>
