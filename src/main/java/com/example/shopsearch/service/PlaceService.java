@@ -21,18 +21,30 @@ public class PlaceService {
     }
 
     public List<PlaceResponse> search(Double lat, Double lng, String locationName, 
-                                     List<String> categoryIds, String storeName, String sortBy, boolean independentOnly) {
+                                    List<String> categoryIds, String storeName, String sortBy, boolean independentOnly) {
         
         StringBuilder queryBuilder = new StringBuilder();
-        if (storeName != null && !storeName.isEmpty()) queryBuilder.append(storeName).append(" ");
-        if (locationName != null && !locationName.isEmpty()) queryBuilder.append(locationName).append(" ");
+
+        // 【ここがポイント】店名がある場合は、他の何よりも先に「店名」を配置する
+        if (storeName != null && !storeName.isEmpty()) {
+            queryBuilder.append(storeName).append(" ");
+        }
+
+        // 次にエリア名（新宿など）があれば足す
+        if (locationName != null && !locationName.isEmpty()) {
+            queryBuilder.append(locationName).append(" ");
+        }
+
+        // カテゴリがあれば足す
         if (categoryIds != null && !categoryIds.isEmpty()) {
             String catKeywords = categoryIds.stream()
                 .map(id -> categoryService.getById(id)).filter(Optional::isPresent)
                 .flatMap(opt -> opt.get().keywords().stream()).collect(Collectors.joining(" "));
-            queryBuilder.append(catKeywords);
+            queryBuilder.append(catKeywords).append(" ");
         }
-        if (independentOnly && queryBuilder.length() > 0) {
+
+        // 個人店フィルター（店名入力時はあえて弱めることで、サイゼリヤ等が出るようにする）
+        if (independentOnly && (storeName == null || storeName.isEmpty())) {
             queryBuilder.append(" 個人店 隠れ家 -チェーン店");
         }
 
@@ -43,10 +55,19 @@ public class PlaceService {
         requestBody.put("textQuery", query);
         requestBody.put("maxResultCount", 10);
         requestBody.put("languageCode", "ja");
-        if (lat != null && lng != null) {
-            requestBody.put("locationBias", Map.of("circle", Map.of("center", Map.of("latitude", lat, "longitude", lng), "radius", 5000.0)));
-        }
 
+        if (lat != null && lng != null) {
+            // 【ここもポイント】
+            // 店名入力がある場合は、半径を広げるか、バイアスを少し弱めに設定する
+            double radius = (storeName != null && !storeName.isEmpty()) ? 10000.0 : 5000.0; // 店名指定なら10kmまで広げる
+            requestBody.put("locationBias", Map.of(
+                "circle", Map.of(
+                    "center", Map.of("latitude", lat, "longitude", lng),
+                    "radius", radius
+                )
+            ));
+        }
+        // ...あとの処理（API呼び出し）はそのまま
         try {
             var response = restClient.post().uri("/places:searchText")
                 .header("X-Goog-Api-Key", apiKey)
