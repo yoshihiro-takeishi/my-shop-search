@@ -27,12 +27,14 @@ public class PlaceService {
         StringBuilder queryBuilder = new StringBuilder();
         if (storeName != null && !storeName.isEmpty()) queryBuilder.append(storeName).append(" ");
         if (locationName != null && !locationName.isEmpty()) queryBuilder.append(locationName).append(" ");
+        
         if (categoryIds != null && !categoryIds.isEmpty()) {
             String catKeywords = categoryIds.stream()
                 .map(id -> categoryService.getById(id)).filter(Optional::isPresent)
                 .flatMap(opt -> opt.get().keywords().stream()).collect(Collectors.joining(" "));
-            queryBuilder.append(catKeywords).append(" ");
+            queryBuilder.append(catKeywords);
         }
+
         if (independentOnly && (storeName == null || storeName.isEmpty())) {
             queryBuilder.append(" 個人店 隠れ家 -チェーン店");
         }
@@ -40,18 +42,23 @@ public class PlaceService {
         String query = queryBuilder.toString().trim();
         if (query.isEmpty()) return Collections.emptyList();
 
+        // リクエストボディの作成
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("textQuery", query);
         requestBody.put("maxResultCount", 10);
         requestBody.put("languageCode", "ja");
 
-        if (lat != null && lng != null) {
-            requestBody.put("locationRestriction", Map.of(
-                "circle", Map.of(
-                    "center", Map.of("latitude", lat, "longitude", lng),
-                    "radius", radius
-                )
-            ));
+        // iPhone（GPSあり）の場合の制限処理を厳格に組み立て
+        if (lat != null && lng != null && radius != null) {
+            Map<String, Object> center = new HashMap<>();
+            center.put("latitude", lat);
+            center.put("longitude", lng);
+
+            Map<String, Object> circle = new HashMap<>();
+            circle.put("center", center);
+            circle.put("radius", radius); // Double型として確実に渡す
+
+            requestBody.put("locationRestriction", Map.of("circle", circle));
         }
 
         try {
@@ -65,9 +72,9 @@ public class PlaceService {
 
             return places.stream().map(p -> {
                 String id = (String) p.get("id");
-                String name = (p.get("displayName") instanceof Map<?, ?> m) ? (String) m.get("text") : "名称不明";
+                String name = "名称不明";
+                if (p.get("displayName") instanceof Map<?, ?> m) name = (String) m.get("text");
 
-                // 数値データの安全なパース
                 Double pLat = null, pLng = null;
                 Integer dist = null;
                 if (p.get("location") instanceof Map<?, ?> loc) {
@@ -78,63 +85,60 @@ public class PlaceService {
                     }
                 }
 
-                String summary = (p.get("editorialSummary") instanceof Map<?, ?> m) ? (String) m.get("text") : null;
+                String summary = null;
+                if (p.get("editorialSummary") instanceof Map<?, ?> m) summary = (String) m.get("text");
+
                 String reviewSnippet = null;
                 if (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) {
-                    if (reviews.get(0) instanceof Map<?, ?> first && first.get("text") instanceof Map<?, ?> t) {
+                    if (reviews.get(0) instanceof Map<?, ?> r && r.get("text") instanceof Map<?, ?> t) {
                         reviewSnippet = (String) t.get("text");
                     }
                 }
 
-                List<String> weekdayText = (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? (List<String>) reg.get("weekdayDescriptions") : null;
-                Boolean openNow = (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null;
+                List<String> weekdayText = null;
+                if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) weekdayText = (List<String>) reg.get("weekdayDescriptions");
+
+                Boolean openNow = null;
+                if (p.get("currentOpeningHours") instanceof Map<?, ?> cur) openNow = (Boolean) cur.get("openNow");
 
                 String photoRef = null;
-                if (p.get("photos") instanceof List<?> photos && !photos.isEmpty()) {
-                    photoRef = (String) ((Map<?, ?>) photos.get(0)).get("name");
-                }
+                if (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) photoRef = (String) ((Map<?, ?>) ph.get(0)).get("name");
 
-                // 予算レベル（String Enum に対応）
                 String priceStr = formatPriceLevel(p.get("priceLevel"));
 
                 return new PlaceResponse(
-                    id, name, 
-                    convertToDouble(p.get("rating")),
-                    convertToInteger(p.get("userRatingCount")),
+                    id, name, convertToDouble(p.get("rating")), convertToInteger(p.get("userRatingCount")),
                     (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
                     dist, photoRef, pLat, pLng, priceStr, openNow, summary, (String) p.get("websiteUri"), reviewSnippet, weekdayText
                 );
             }).sorted(getComparator(sortBy, lat != null)).toList();
-        } catch (Exception e) { 
-            e.printStackTrace(); 
-            throw e; 
+
+        } catch (Exception e) {
+            // エラーの内容をRenderのログに詳細に出す
+            System.err.println("CRITICAL ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
     }
 
-    // 数値変換ヘルパー
     private Double convertToDouble(Object obj) {
         if (obj instanceof Number n) return n.doubleValue();
-        if (obj instanceof String s) try { return Double.parseDouble(s); } catch (Exception e) { return 0.0; }
         return 0.0;
     }
 
     private Integer convertToInteger(Object obj) {
         if (obj instanceof Number n) return n.intValue();
-        if (obj instanceof String s) try { return Integer.parseInt(s); } catch (Exception e) { return 0; }
         return 0;
     }
 
-    // 予算レベルの変換 (Enum文字列を ￥ マークに変換)
     private String formatPriceLevel(Object obj) {
         if (obj == null) return null;
-        String level = obj.toString(); // "PRICE_LEVEL_MODERATE" 等
-        return switch (level) {
-            case "PRICE_LEVEL_INEXPENSIVE" -> "￥";
-            case "PRICE_LEVEL_MODERATE" -> "￥￥";
-            case "PRICE_LEVEL_EXPENSIVE" -> "￥￥￥";
-            case "PRICE_LEVEL_VERY_EXPENSIVE" -> "￥￥￥￥";
-            default -> null;
-        };
+        String s = obj.toString();
+        if (s.contains("INEXPENSIVE")) return "￥";
+        if (s.contains("MODERATE")) return "￥￥";
+        if (s.contains("VERY_EXPENSIVE")) return "￥￥￥￥";
+        if (s.contains("EXPENSIVE")) return "￥￥￥";
+        return null;
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
