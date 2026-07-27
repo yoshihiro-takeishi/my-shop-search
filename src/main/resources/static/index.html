@@ -129,39 +129,40 @@
 
     // index.html の search 関数内
     async function search() {
-        const store = document.getElementById('storeInput').value.trim();
-        const area = document.getElementById('areaInput').value.trim();
-        
-        // カテゴリが選択されていても、店名入力があれば店名をメインにする
+        const store = document.getElementById('storeInput').value;
         if (selectedCats.size === 0 && !store) return alert("気分か店名を入力してください");
 
         saveSettings();
         const resDiv = document.getElementById('results');
-        resDiv.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.8em; color:#64748b;">検索中...</div>';
-        
-        const params = new URLSearchParams({ 
-            sortBy: document.getElementById('sortBy').value, 
-            independentOnly: document.getElementById('independentOnly').checked 
+        resDiv.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);"><i class="fa-solid fa-spinner fa-spin"></i> 検索中...</div>';
+
+        const params = new URLSearchParams({
+            sortBy: document.getElementById('sortBy').value,
+            independentOnly: document.getElementById('independentOnly').checked
         });
 
-        // パラメータをセット
+        // --- ここを「安全な書き方」に修正 ---
+        const radiusEl = document.getElementById('radiusRange');
+        const radius = radiusEl ? radiusEl.value : 5000; // 欄がなければ5kmにする
+        params.append('radius', radius);
+        // ---------------------------------
+
         if (store) params.append('storeName', store);
-        if (area) params.append('location', area);
+        if (document.getElementById('areaInput').value) params.append('location', document.getElementById('areaInput').value);
         selectedCats.forEach(id => params.append('categoryIds', id));
-        
-        // GPSがある場合のみ追加
-        if (userLoc) {
-            params.append('lat', userLoc.lat);
-            params.append('lng', userLoc.lng);
-        }
-        
-        // ... Fetch処理へ
+        if (userLoc) { params.append('lat', userLoc.lat); params.append('lng', userLoc.lng); }
+
         try {
             const res = await fetch(`/api/places/search?${params.toString()}`);
-            if (!res.ok) throw new Error();
-            renderShops(await res.json());
+            if (!res.ok) throw new Error("サーバーエラー");
+            const shops = await res.json();
+            renderShops(shops);
             resDiv.scrollIntoView({ behavior: 'smooth' });
-        } catch (e) { resDiv.innerHTML = '<p style="text-align:center; color:red; padding:40px;">エラー</p>'; }
+        } catch (e) {
+            // iPhoneでエラーの正体が見えるようにアラートを出す
+            alert("エラー詳細: " + e.message); 
+            resDiv.innerHTML = '<p style="text-align:center; color:red; padding:40px;">エラーが発生しました</p>';
+        }
     }
 
     function renderShops(shops) {
