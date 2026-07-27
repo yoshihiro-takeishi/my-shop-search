@@ -25,7 +25,9 @@ public class PlaceService {
                                      String sortBy, boolean independentOnly, Double radius) {
         
         StringBuilder queryBuilder = new StringBuilder();
-        if (storeName != null && !storeName.isEmpty()) queryBuilder.append(storeName).append(" ");
+        boolean isStoreSearch = storeName != null && !storeName.isEmpty();
+
+        if (isStoreSearch) queryBuilder.append(storeName).append(" ");
         if (locationName != null && !locationName.isEmpty()) queryBuilder.append(locationName).append(" ");
         
         if (categoryIds != null && !categoryIds.isEmpty()) {
@@ -35,30 +37,30 @@ public class PlaceService {
             queryBuilder.append(catKeywords);
         }
 
-        if (independentOnly && (storeName == null || storeName.isEmpty())) {
+        if (independentOnly && !isStoreSearch) {
             queryBuilder.append(" 個人店 隠れ家 -チェーン店");
         }
 
         String query = queryBuilder.toString().trim();
         if (query.isEmpty()) return Collections.emptyList();
 
-        // リクエストボディの作成
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("textQuery", query);
         requestBody.put("maxResultCount", 10);
         requestBody.put("languageCode", "ja");
 
-        // iPhone（GPSあり）の場合の制限処理を厳格に組み立て
-        if (lat != null && lng != null && radius != null) {
-            Map<String, Object> center = new HashMap<>();
-            center.put("latitude", lat);
-            center.put("longitude", lng);
-
+        if (lat != null && lng != null) {
             Map<String, Object> circle = new HashMap<>();
-            circle.put("center", center);
-            circle.put("radius", radius); // Double型として確実に渡す
+            circle.put("center", Map.of("latitude", lat, "longitude", lng));
+            circle.put("radius", (radius != null) ? radius : 5000.0);
 
-            requestBody.put("locationRestriction", Map.of("circle", circle));
+            // 【改善】店名検索（指名検索）の時は、5km外も探せるように「優先(Bias)」にする
+            // カテゴリ検索の時は、遠くの店が出ないように「制限(Restriction)」にする
+            if (isStoreSearch) {
+                requestBody.put("locationBias", Map.of("circle", circle));
+            } else {
+                requestBody.put("locationRestriction", Map.of("circle", circle));
+            }
         }
 
         try {
@@ -85,9 +87,7 @@ public class PlaceService {
                     }
                 }
 
-                String summary = null;
-                if (p.get("editorialSummary") instanceof Map<?, ?> m) summary = (String) m.get("text");
-
+                String summary = (p.get("editorialSummary") instanceof Map<?, ?> m) ? (String) m.get("text") : null;
                 String reviewSnippet = null;
                 if (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) {
                     if (reviews.get(0) instanceof Map<?, ?> r && r.get("text") instanceof Map<?, ?> t) {
@@ -95,14 +95,14 @@ public class PlaceService {
                     }
                 }
 
-                List<String> weekdayText = null;
-                if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) weekdayText = (List<String>) reg.get("weekdayDescriptions");
-
-                Boolean openNow = null;
-                if (p.get("currentOpeningHours") instanceof Map<?, ?> cur) openNow = (Boolean) cur.get("openNow");
+                List<String> weekdayText = (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? (List<String>) reg.get("weekdayDescriptions") : null;
+                Boolean openNow = (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null;
 
                 String photoRef = null;
-                if (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) photoRef = (String) ((Map<?, ?>) ph.get(0)).get("name");
+                if (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) {
+                    Map<?, ?> firstPhoto = (Map<?, ?>) ph.get(0);
+                    photoRef = (String) firstPhoto.get("name");
+                }
 
                 String priceStr = formatPriceLevel(p.get("priceLevel"));
 
@@ -114,8 +114,6 @@ public class PlaceService {
             }).sorted(getComparator(sortBy, lat != null)).toList();
 
         } catch (Exception e) {
-            // エラーの内容をRenderのログに詳細に出す
-            System.err.println("CRITICAL ERROR: " + e.getMessage());
             e.printStackTrace();
             throw e;
         }
