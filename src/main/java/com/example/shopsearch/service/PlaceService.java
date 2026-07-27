@@ -21,29 +21,18 @@ public class PlaceService {
     }
 
     public List<PlaceResponse> search(Double lat, Double lng, String locationName, 
-                                    List<String> categoryIds, String storeName, String sortBy, boolean independentOnly) {
+                                     List<String> categoryIds, String storeName, 
+                                     String sortBy, boolean independentOnly, Double radius) {
         
         StringBuilder queryBuilder = new StringBuilder();
-
-        // 【ここがポイント】店名がある場合は、他の何よりも先に「店名」を配置する
-        if (storeName != null && !storeName.isEmpty()) {
-            queryBuilder.append(storeName).append(" ");
-        }
-
-        // 次にエリア名（新宿など）があれば足す
-        if (locationName != null && !locationName.isEmpty()) {
-            queryBuilder.append(locationName).append(" ");
-        }
-
-        // カテゴリがあれば足す
+        if (storeName != null && !storeName.isEmpty()) queryBuilder.append(storeName).append(" ");
+        if (locationName != null && !locationName.isEmpty()) queryBuilder.append(locationName).append(" ");
         if (categoryIds != null && !categoryIds.isEmpty()) {
             String catKeywords = categoryIds.stream()
                 .map(id -> categoryService.getById(id)).filter(Optional::isPresent)
                 .flatMap(opt -> opt.get().keywords().stream()).collect(Collectors.joining(" "));
             queryBuilder.append(catKeywords).append(" ");
         }
-
-        // 個人店フィルター（店名入力時はあえて弱めることで、サイゼリヤ等が出るようにする）
         if (independentOnly && (storeName == null || storeName.isEmpty())) {
             queryBuilder.append(" 個人店 隠れ家 -チェーン店");
         }
@@ -57,17 +46,14 @@ public class PlaceService {
         requestBody.put("languageCode", "ja");
 
         if (lat != null && lng != null) {
-            // 【ここもポイント】
-            // 店名入力がある場合は、半径を広げるか、バイアスを少し弱めに設定する
-            double radius = (storeName != null && !storeName.isEmpty()) ? 10000.0 : 5000.0; // 店名指定なら10kmまで広げる
-            requestBody.put("locationBias", Map.of(
+            requestBody.put("locationRestriction", Map.of(
                 "circle", Map.of(
                     "center", Map.of("latitude", lat, "longitude", lng),
                     "radius", radius
                 )
             ));
         }
-        // ...あとの処理（API呼び出し）はそのまま
+
         try {
             var response = restClient.post().uri("/places:searchText")
                 .header("X-Goog-Api-Key", apiKey)
@@ -78,79 +64,77 @@ public class PlaceService {
             List<Map<String, Object>> places = (List<Map<String, Object>>) response.get("places");
 
             return places.stream().map(p -> {
-                try {
-                    // 1. 基本情報の安全取得
-                    String id = (String) p.get("id");
-                    String name = "名称不明";
-                    if (p.get("displayName") instanceof Map<?, ?> m && m.get("text") != null) {
-                        name = (String) m.get("text");
-                    }
+                String id = (String) p.get("id");
+                String name = (p.get("displayName") instanceof Map<?, ?> m) ? (String) m.get("text") : "名称不明";
 
-                    // 2. 座標と距離の安全取得
-                    Double pLat = null, pLng = null;
-                    Integer dist = null;
-                    if (p.get("location") instanceof Map<?, ?> loc) {
-                        Object latObj = loc.get("latitude");
-                        Object lngObj = loc.get("longitude");
-                        if (latObj instanceof Number && lngObj instanceof Number) {
-                            pLat = ((Number) latObj).doubleValue();
-                            pLng = ((Number) lngObj).doubleValue();
-                            if (lat != null && lng != null) {
-                                dist = (int)(calculateDistance(lat, lng, pLat, pLng) * 1000);
-                            }
-                        }
+                // 数値データの安全なパース
+                Double pLat = null, pLng = null;
+                Integer dist = null;
+                if (p.get("location") instanceof Map<?, ?> loc) {
+                    pLat = convertToDouble(loc.get("latitude"));
+                    pLng = convertToDouble(loc.get("longitude"));
+                    if (lat != null && lng != null && pLat != null && pLng != null) {
+                        dist = (int)(calculateDistance(lat, lng, pLat, pLng) * 1000);
                     }
-
-                    // 3. 概要
-                    String summary = null;
-                    if (p.get("editorialSummary") instanceof Map<?, ?> m) summary = (String) m.get("text");
-
-                    // 4. クチコミ
-                    String reviewSnippet = null;
-                    if (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) {
-                        if (reviews.get(0) instanceof Map<?, ?> first && first.get("text") instanceof Map<?, ?> t) {
-                            reviewSnippet = (String) t.get("text");
-                        }
-                    }
-
-                    // 5. 営業時間
-                    List<String> weekdayText = null;
-                    if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) {
-                        weekdayText = (List<String>) reg.get("weekdayDescriptions");
-                    }
-                    Boolean openNow = null;
-                    if (p.get("currentOpeningHours") instanceof Map<?, ?> cur) {
-                        openNow = (Boolean) cur.get("openNow");
-                    }
-
-                    // 6. 写真・予算・サイト
-                    String photoRef = null;
-                    if (p.get("photos") instanceof List<?> photos && !photos.isEmpty()) {
-                        if (photos.get(0) instanceof Map<?, ?> firstPhoto) photoRef = (String) firstPhoto.get("name");
-                    }
-
-                    String priceStr = null;
-                    if (p.get("priceLevel") != null && p.get("priceLevel") instanceof Number num) {
-                        priceStr = "￥".repeat(Math.max(1, num.intValue()));
-                    }
-
-                    return new PlaceResponse(
-                        id, name,
-                        p.get("rating") != null ? ((Number) p.get("rating")).doubleValue() : 0.0,
-                        p.get("userRatingCount") != null ? ((Number) p.get("userRatingCount")).intValue() : 0,
-                        (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
-                        dist, photoRef, pLat, pLng,
-                        priceStr, openNow, summary, (String) p.get("websiteUri"), reviewSnippet, weekdayText
-                    );
-                } catch (Exception e) {
-                    return null; // 個別の店舗データに不備がある場合はスキップ
                 }
-            }).filter(Objects::nonNull).sorted(getComparator(sortBy, lat != null)).toList();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
+                String summary = (p.get("editorialSummary") instanceof Map<?, ?> m) ? (String) m.get("text") : null;
+                String reviewSnippet = null;
+                if (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) {
+                    if (reviews.get(0) instanceof Map<?, ?> first && first.get("text") instanceof Map<?, ?> t) {
+                        reviewSnippet = (String) t.get("text");
+                    }
+                }
+
+                List<String> weekdayText = (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? (List<String>) reg.get("weekdayDescriptions") : null;
+                Boolean openNow = (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null;
+
+                String photoRef = null;
+                if (p.get("photos") instanceof List<?> photos && !photos.isEmpty()) {
+                    photoRef = (String) ((Map<?, ?>) photos.get(0)).get("name");
+                }
+
+                // 予算レベル（String Enum に対応）
+                String priceStr = formatPriceLevel(p.get("priceLevel"));
+
+                return new PlaceResponse(
+                    id, name, 
+                    convertToDouble(p.get("rating")),
+                    convertToInteger(p.get("userRatingCount")),
+                    (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
+                    dist, photoRef, pLat, pLng, priceStr, openNow, summary, (String) p.get("websiteUri"), reviewSnippet, weekdayText
+                );
+            }).sorted(getComparator(sortBy, lat != null)).toList();
+        } catch (Exception e) { 
+            e.printStackTrace(); 
+            throw e; 
         }
+    }
+
+    // 数値変換ヘルパー
+    private Double convertToDouble(Object obj) {
+        if (obj instanceof Number n) return n.doubleValue();
+        if (obj instanceof String s) try { return Double.parseDouble(s); } catch (Exception e) { return 0.0; }
+        return 0.0;
+    }
+
+    private Integer convertToInteger(Object obj) {
+        if (obj instanceof Number n) return n.intValue();
+        if (obj instanceof String s) try { return Integer.parseInt(s); } catch (Exception e) { return 0; }
+        return 0;
+    }
+
+    // 予算レベルの変換 (Enum文字列を ￥ マークに変換)
+    private String formatPriceLevel(Object obj) {
+        if (obj == null) return null;
+        String level = obj.toString(); // "PRICE_LEVEL_MODERATE" 等
+        return switch (level) {
+            case "PRICE_LEVEL_INEXPENSIVE" -> "￥";
+            case "PRICE_LEVEL_MODERATE" -> "￥￥";
+            case "PRICE_LEVEL_EXPENSIVE" -> "￥￥￥";
+            case "PRICE_LEVEL_VERY_EXPENSIVE" -> "￥￥￥￥";
+            default -> null;
+        };
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {

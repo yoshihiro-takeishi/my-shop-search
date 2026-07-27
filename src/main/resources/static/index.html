@@ -67,13 +67,20 @@
         <div class="label">場所</div>
         <div class="input-group"><i class="fa-solid fa-location-dot"></i><input type="text" id="areaInput" placeholder="現在地、または駅名"></div>
         <div class="label">店名・キーワード</div>
-        <div class="input-group"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="storeInput" placeholder="例：サイゼリヤ"></div>
+        <div class="input-group"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="storeInput" placeholder="例：マクドナルド"></div>
         <div id="categoryGrid" class="category-grid"></div>
         <div class="settings-area"><span>個人店・隠れ家優先</span><input type="checkbox" id="independentOnly" style="width:18px; height:18px;"></div>
         <button onclick="search()" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i> 検索開始</button>
         <div style="display:flex; gap:8px; margin-top:12px;">
             <select id="sortBy" style="flex:1; padding:8px; border-radius:6px; border:1px solid #e2e8f0; font-size:0.75em;"><option value="rating">評価順</option><option value="distance">近い順</option><option value="userRatingsTotal">口コミ数</option></select>
             <select id="travelMode" style="flex:1; padding:8px; border-radius:6px; border:1px solid #e2e8f0; font-size:0.75em;"><option value="walking">徒歩</option><option value="driving">車</option><option value="transit">電車</option></select>
+            <select id="radiusRange" style="flex:1; padding:8px; border-radius:6px; border:1px solid #e2e8f0; font-size:0.75em;" onchange="saveSettings()">
+                <option value="1000">1km以内</option>
+                <option value="3000">3km以内</option>
+                <option value="5000" selected>5km以内</option>
+                <option value="10000">10km以内</option>
+                <option value="20000">20km以内</option>
+            </select>
         </div>
     </div>
     <div id="results"></div>
@@ -99,6 +106,8 @@
             item.onclick = () => { selectedCats.has(cat.id) ? selectedCats.delete(cat.id) : selectedCats.add(cat.id); item.classList.toggle('active'); };
             grid.appendChild(item);
         });
+        const radius = document.getElementById('radiusRange').value;
+        params.append('radius', radius);
     }
 
     function toggleFavorite(shopId, btn) {
