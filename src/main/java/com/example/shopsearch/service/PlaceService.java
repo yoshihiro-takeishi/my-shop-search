@@ -27,16 +27,23 @@ public class PlaceService {
         StringBuilder queryBuilder = new StringBuilder();
         boolean isStoreSearch = storeName != null && !storeName.isEmpty();
 
+        // 1. クエリの組み立て（順番が重要：店名 > カテゴリ > エリア）
         if (isStoreSearch) queryBuilder.append(storeName).append(" ");
-        if (locationName != null && !locationName.isEmpty()) queryBuilder.append(locationName).append(" ");
         
         if (categoryIds != null && !categoryIds.isEmpty()) {
             String catKeywords = categoryIds.stream()
-                .map(id -> categoryService.getById(id)).filter(Optional::isPresent)
-                .flatMap(opt -> opt.get().keywords().stream()).collect(Collectors.joining(" "));
-            queryBuilder.append(catKeywords);
+                .map(id -> categoryService.getById(id))
+                .filter(Optional::isPresent)
+                .flatMap(opt -> opt.get().keywords().stream())
+                .collect(Collectors.joining(" "));
+            queryBuilder.append(catKeywords).append(" ");
         }
 
+        if (locationName != null && !locationName.isEmpty()) {
+            queryBuilder.append(locationName).append(" ");
+        }
+
+        // 個人店フィルター（店名検索でない時のみ有効化）
         if (independentOnly && !isStoreSearch) {
             queryBuilder.append(" 個人店 隠れ家 -チェーン店");
         }
@@ -44,38 +51,36 @@ public class PlaceService {
         String query = queryBuilder.toString().trim();
         if (query.isEmpty()) return Collections.emptyList();
 
+        // 2. リクエストボディの作成
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("textQuery", query);
         requestBody.put("maxResultCount", 10);
         requestBody.put("languageCode", "ja");
 
         if (lat != null && lng != null) {
-            Map<String, Object> circle = new HashMap<>();
-            circle.put("center", Map.of("latitude", lat, "longitude", lng));
-            circle.put("radius", (radius != null) ? radius : 5000.0);
-
-            // 【改善】店名検索（指名検索）の時は、5km外も探せるように「優先(Bias)」にする
-            // カテゴリ検索の時は、遠くの店が出ないように「制限(Restriction)」にする
-            if (isStoreSearch) {
-                requestBody.put("locationBias", Map.of("circle", circle));
-            } else {
-                requestBody.put("locationRestriction", Map.of("circle", circle));
-            }
+            // エラー回避のため、Restriction(制限)ではなくBias(優先)を使用
+            // radiusは画面からの指定を使う（デフォルト5km）
+            Map<String, Object> circle = Map.of(
+                "center", Map.of("latitude", lat, "longitude", lng),
+                "radius", (radius != null) ? radius : 5000.0
+            );
+            requestBody.put("locationBias", Map.of("circle", circle));
         }
 
         try {
             var response = restClient.post().uri("/places:searchText")
                 .header("X-Goog-Api-Key", apiKey)
                 .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours")
-                .body(requestBody).retrieve().body(Map.class);
+                .body(requestBody)
+                .retrieve()
+                .body(Map.class);
 
             if (response == null || !response.containsKey("places")) return Collections.emptyList();
             List<Map<String, Object>> places = (List<Map<String, Object>>) response.get("places");
 
             return places.stream().map(p -> {
                 String id = (String) p.get("id");
-                String name = "名称不明";
-                if (p.get("displayName") instanceof Map<?, ?> m) name = (String) m.get("text");
+                String name = (p.get("displayName") instanceof Map<?, ?> m) ? (String) m.get("text") : "名称不明";
 
                 Double pLat = null, pLng = null;
                 Integer dist = null;
@@ -97,13 +102,7 @@ public class PlaceService {
 
                 List<String> weekdayText = (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? (List<String>) reg.get("weekdayDescriptions") : null;
                 Boolean openNow = (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null;
-
-                String photoRef = null;
-                if (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) {
-                    Map<?, ?> firstPhoto = (Map<?, ?>) ph.get(0);
-                    photoRef = (String) firstPhoto.get("name");
-                }
-
+                String photoRef = (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) ? (String) ((Map<?, ?>) ph.get(0)).get("name") : null;
                 String priceStr = formatPriceLevel(p.get("priceLevel"));
 
                 return new PlaceResponse(
@@ -114,6 +113,7 @@ public class PlaceService {
             }).sorted(getComparator(sortBy, lat != null)).toList();
 
         } catch (Exception e) {
+            System.err.println("Search failed for query: " + query);
             e.printStackTrace();
             throw e;
         }
