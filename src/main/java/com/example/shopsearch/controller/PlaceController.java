@@ -35,11 +35,12 @@ public class PlaceController {
             @RequestParam(required = false) String storeName,
             @RequestParam(defaultValue = "rating") String sortBy,
             @RequestParam(defaultValue = "false") boolean independentOnly,
-            @RequestParam(defaultValue = "5000") Double radius) { // 半径を引数に追加
+            @RequestParam(defaultValue = "5000") Double radius,
+            @RequestParam(defaultValue = "false") boolean openNow) { // ここを追加
         
         List<String> cats = (categoryIds != null) ? categoryIds : new ArrayList<>();
-        // Serviceの引数を8個に増やして呼び出す
-        return placeService.search(lat, lng, location, cats, storeName, sortBy, independentOnly, radius);
+        // Serviceの引数を9個に増やして呼び出す
+        return placeService.search(lat, lng, location, cats, storeName, sortBy, independentOnly, radius, openNow);
     }
 
     @GetMapping("/places/photo")
