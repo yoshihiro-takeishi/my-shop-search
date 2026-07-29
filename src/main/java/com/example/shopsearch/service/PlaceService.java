@@ -20,7 +20,6 @@ public class PlaceService {
         this.categoryService = categoryService;
     }
 
-    // 引数に boolean openNow を確実に含めています（合計9個）
     public List<PlaceResponse> search(Double lat, Double lng, String locationName, 
                                      List<String> categoryIds, String storeName, 
                                      String sortBy, boolean independentOnly, Double radius, boolean openNow) {
@@ -45,11 +44,14 @@ public class PlaceService {
         String query = queryBuilder.toString().trim();
         if (query.isEmpty()) return Collections.emptyList();
 
+        // 半径が10km以上の場合は、精度を上げるためGoogleから20件取得する（通常は10件）
+        int fetchCount = (radius != null && radius >= 10000.0) ? 20 : 10;
+
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("textQuery", query);
-        requestBody.put("maxResultCount", 10);
+        requestBody.put("maxResultCount", fetchCount);
         requestBody.put("languageCode", "ja");
-        requestBody.put("openNow", openNow); // これで「openNow cannot be resolved」が消えます
+        requestBody.put("openNow", openNow);
 
         if (lat != null && lng != null) {
             Map<String, Object> circle = new HashMap<>();
@@ -66,7 +68,6 @@ public class PlaceService {
 
             if (response == null || !response.containsKey("places")) return Collections.emptyList();
             
-            // 型安全性の警告を抑制
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> places = (List<Map<String, Object>>) response.get("places");
 
@@ -95,7 +96,6 @@ public class PlaceService {
 
                 List<String> weekdayText = null;
                 if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) {
-                    // capture#17 警告を回避するためのキャスト
                     Object desc = reg.get("weekdayDescriptions");
                     if (desc instanceof List<?>) {
                         @SuppressWarnings("unchecked")
@@ -118,7 +118,10 @@ public class PlaceService {
                     (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
                     dist, photoRef, pLat, pLng, formatPriceLevel(p.get("priceLevel")), isOpen, summary, (String) p.get("websiteUri"), reviewSnippet, weekdayText
                 );
-            }).sorted(getComparator(sortBy, lat != null)).toList();
+            })
+            .sorted(getComparator(sortBy, lat != null))
+            .limit(10) // 最終的には画面が重くならないよう10件に絞る
+            .toList();
 
         } catch (Exception e) {
             e.printStackTrace();

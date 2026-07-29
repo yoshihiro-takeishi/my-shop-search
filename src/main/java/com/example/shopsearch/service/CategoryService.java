@@ -52,6 +52,15 @@ public class CategoryService {
         new Category("healthy", "サラダ・健康食", List.of("サラダ専門店", "オーガニック", "ヘルシー"), "fa-seedling"), // +α
         new Category("bento", "弁当・テイクアウト", List.of("弁当", "テイクアウト"), "fa-box"),
         new Category("gyudon", "牛丼・丼もの", List.of("牛丼", "親子丼", "天丼"), "fa-bowl-rice"), // +α
+
+        // 粉もの：お好み焼きやたこ焼き
+        new Category("konamono", "お好み焼き・粉もの", List.of("お好み焼き", "もんじゃ焼き", "たこ焼き"), "fa-stroopwafel"),
+
+        // 鍋：冬場の強力な味方
+        new Category("shabu_nabe", "しゃぶしゃぶ・鍋", List.of("しゃぶしゃぶ", "すき焼き", "鍋料理"), "fa-bowl-hot"),
+
+        // 軽食：もっとカジュアルに済ませたい時
+        new Category("fastfood", "軽食・テイクアウト", List.of("ケバブ", "ホットドッグ", "たこ焼き", "おにぎり専門店"), "fa-cookie-bite"),
         new Category("famiresu", "ファミレス", List.of("ファミリーレストラン"), "fa-users")
     );
 
