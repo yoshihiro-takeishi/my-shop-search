@@ -44,8 +44,8 @@ public class PlaceService {
         String query = queryBuilder.toString().trim();
         if (query.isEmpty()) return Collections.emptyList();
 
-        // 半径が10km以上の場合は、精度を上げるためGoogleから20件取得する（通常は10件）
-        int fetchCount = (radius != null && radius >= 10000.0) ? 20 : 10;
+        // 精度向上のため、常に多めに20件取得する
+        int fetchCount = 20;
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("textQuery", query);
@@ -86,47 +86,30 @@ public class PlaceService {
                 }
 
                 String summary = (p.get("editorialSummary") instanceof Map<?, ?> m) ? (String) m.get("text") : null;
-                
-                String reviewSnippet = null;
-                if (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) {
-                    if (reviews.get(0) instanceof Map<?, ?> r && r.get("text") instanceof Map<?, ?> t) {
-                        reviewSnippet = (String) t.get("text");
-                    }
-                }
-
-                List<String> weekdayText = null;
-                if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) {
-                    Object desc = reg.get("weekdayDescriptions");
-                    if (desc instanceof List<?>) {
-                        @SuppressWarnings("unchecked")
-                        List<String> casted = (List<String>) desc;
-                        weekdayText = casted;
-                    }
-                }
-
+                String review = (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) ? 
+                    (String)((Map)((Map)reviews.get(0)).get("text")).get("text") : null;
+                List<String> weekdayText = (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? 
+                    (List<String>) reg.get("weekdayDescriptions") : null;
                 Boolean isOpen = (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null;
-
-                String photoRef = null;
-                if (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) {
-                    if (ph.get(0) instanceof Map<?, ?> firstPhoto) {
-                        photoRef = (String) firstPhoto.get("name");
-                    }
-                }
+                String photoRef = (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) ? (String) ((Map<?, ?>) ph.get(0)).get("name") : null;
 
                 return new PlaceResponse(
                     id, name, convertToDouble(p.get("rating")), convertToInteger(p.get("userRatingCount")),
                     (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
-                    dist, photoRef, pLat, pLng, formatPriceLevel(p.get("priceLevel")), isOpen, summary, (String) p.get("websiteUri"), reviewSnippet, weekdayText
+                    dist, photoRef, pLat, pLng, formatPriceLevel(p.get("priceLevel")), isOpen, summary, (String) p.get("websiteUri"), review, weekdayText
                 );
             })
+            // 【重要】サーバー側で距離フィルタリングを実行
+            .filter(dto -> {
+                if (lat == null || radius == null || dto.distanceMeters() == null) return true;
+                // 指定された半径の1.2倍（バッファ）を超える店は除外する
+                return dto.distanceMeters() <= (radius * 1.2);
+            })
             .sorted(getComparator(sortBy, lat != null))
-            .limit(10) // 最終的には画面が重くならないよう10件に絞る
+            .limit(10)
             .toList();
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        } catch (Exception e) { e.printStackTrace(); throw e; }
     }
 
     private Double convertToDouble(Object obj) {
