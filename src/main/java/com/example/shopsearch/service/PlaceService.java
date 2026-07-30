@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 public class PlaceService {
     @Value("${google.places.api-key}")
     private String apiKey;
-
     private final RestClient restClient;
     private final CategoryService categoryService;
 
@@ -26,107 +25,76 @@ public class PlaceService {
         
         StringBuilder queryBuilder = new StringBuilder();
         boolean isStoreSearch = (storeName != null && !storeName.isEmpty());
-
         if (isStoreSearch) queryBuilder.append(storeName).append(" ");
         if (locationName != null && !locationName.isEmpty()) queryBuilder.append(locationName).append(" ");
-        
         if (categoryIds != null && !categoryIds.isEmpty()) {
             String catKeywords = categoryIds.stream()
                 .map(id -> categoryService.getById(id)).filter(Optional::isPresent)
                 .flatMap(opt -> opt.get().keywords().stream()).collect(Collectors.joining(" "));
             queryBuilder.append(catKeywords);
         }
-
-        if (independentOnly && !isStoreSearch) {
-            queryBuilder.append(" 個人店 隠れ家 -チェーン店");
-        }
+        if (independentOnly && !isStoreSearch) queryBuilder.append(" 個人店 隠れ家 -チェーン店");
 
         String query = queryBuilder.toString().trim();
         if (query.isEmpty()) return Collections.emptyList();
 
-        // 精度向上のため、常に多めに20件取得する
-        int fetchCount = 20;
-
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("textQuery", query);
-        requestBody.put("maxResultCount", fetchCount);
+        requestBody.put("maxResultCount", 20);
         requestBody.put("languageCode", "ja");
         requestBody.put("openNow", openNow);
 
         if (lat != null && lng != null) {
-            Map<String, Object> circle = new HashMap<>();
-            circle.put("center", Map.of("latitude", lat, "longitude", lng));
-            circle.put("radius", (radius != null) ? radius : 5000.0);
+            Map<String, Object> circle = Map.of("center", Map.of("latitude", lat, "longitude", lng), "radius", (radius != null ? radius : 5000.0));
             requestBody.put("locationBias", Map.of("circle", circle));
         }
 
         try {
             var response = restClient.post().uri("/places:searchText")
                 .header("X-Goog-Api-Key", apiKey)
-                .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours,places.menuUri")
+                // places.menuUri を削除
+                .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours")
                 .body(requestBody).retrieve().body(Map.class);
 
             if (response == null || !response.containsKey("places")) return Collections.emptyList();
-            
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> places = (List<Map<String, Object>>) response.get("places");
 
             return places.stream().map(p -> {
-                String id = (String) p.get("id");
-                String name = (p.get("displayName") instanceof Map<?, ?> m) ? (String) m.get("text") : "名称不明";
-
-                Double pLat = null, pLng = null;
-                Integer dist = null;
-                if (p.get("location") instanceof Map<?, ?> loc) {
-                    pLat = convertToDouble(loc.get("latitude"));
-                    pLng = convertToDouble(loc.get("longitude"));
-                    if (lat != null && lng != null && pLat != null && pLng != null) {
-                        dist = (int)(calculateDistance(lat, lng, pLat, pLng) * 1000);
-                    }
+                Map<String, Object> loc = (Map<String, Object>) p.get("location");
+                double pLat = ((Number) loc.get("latitude")).doubleValue();
+                double pLng = ((Number) loc.get("longitude")).doubleValue();
+                
+                String review = null;
+                if (p.get("reviews") instanceof List<?> rs && !rs.isEmpty()) {
+                    if (rs.get(0) instanceof Map<?, ?> r && r.get("text") instanceof Map<?, ?> t) review = (String) t.get("text");
                 }
 
-                String summary = (p.get("editorialSummary") instanceof Map<?, ?> m) ? (String) m.get("text") : null;
-                String review = (p.get("reviews") instanceof List<?> reviews && !reviews.isEmpty()) ? 
-                    (String)((Map)((Map)reviews.get(0)).get("text")).get("text") : null;
-                List<String> weekdayText = (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? 
-                    (List<String>) reg.get("weekdayDescriptions") : null;
-                Boolean isOpen = (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null;
-                String photoRef = (p.get("photos") instanceof List<?> ph && !ph.isEmpty()) ? (String) ((Map<?, ?>) ph.get(0)).get("name") : null;
+                List<String> weekdayText = null;
+                if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) weekdayText = (List<String>) reg.get("weekdayDescriptions");
 
                 return new PlaceResponse(
-                    id, name, convertToDouble(p.get("rating")), convertToInteger(p.get("userRatingCount")),
+                    (String) p.get("id"),
+                    (String) ((Map) p.get("displayName")).get("text"),
+                    p.get("rating") != null ? ((Number) p.get("rating")).doubleValue() : 0.0,
+                    p.get("userRatingCount") != null ? ((Number) p.get("userRatingCount")).intValue() : 0,
                     (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
-                    dist, photoRef, pLat, pLng, formatPriceLevel(p.get("priceLevel")), isOpen, summary, 
-                    (String) p.get("websiteUri"), review, weekdayText,
-                    (String) p.get("menuUri") // 追加
+                    (lat != null && lng != null) ? (int)(calculateDistance(lat, lng, pLat, pLng) * 1000) : null,
+                    (p.get("photos") instanceof List<?> phs && !phs.isEmpty()) ? (String)((Map)phs.get(0)).get("name") : null,
+                    pLat, pLng, formatPriceLevel(p.get("priceLevel")),
+                    (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null,
+                    (p.get("editorialSummary") instanceof Map<?, ?> sm) ? (String) sm.get("text") : null,
+                    (String) p.get("websiteUri"), review, weekdayText
                 );
             })
-            // 【重要】サーバー側で距離フィルタリングを実行
-            .filter(dto -> {
-                if (lat == null || radius == null || dto.distanceMeters() == null) return true;
-                // 指定された半径の1.2倍（バッファ）を超える店は除外する
-                return dto.distanceMeters() <= (radius * 1.2);
-            })
-            .sorted(getComparator(sortBy, lat != null))
-            .limit(10)
-            .toList();
-
+            .filter(dto -> (lat == null || radius == null || dto.distanceMeters() == null) ? true : dto.distanceMeters() <= (radius * 1.2))
+            .sorted(getComparator(sortBy, lat != null)).limit(10).toList();
         } catch (Exception e) { e.printStackTrace(); throw e; }
     }
 
-    private Double convertToDouble(Object obj) {
-        if (obj instanceof Number n) return n.doubleValue();
-        return 0.0;
-    }
-
-    private Integer convertToInteger(Object obj) {
-        if (obj instanceof Number n) return n.intValue();
-        return 0;
-    }
-
-    private String formatPriceLevel(Object obj) {
-        if (obj == null) return null;
-        String s = obj.toString();
+    private String formatPriceLevel(Object o) {
+        if (o == null) return null;
+        String s = o.toString();
         if (s.contains("INEXPENSIVE")) return "￥";
         if (s.contains("MODERATE")) return "￥￥";
         if (s.contains("VERY_EXPENSIVE")) return "￥￥￥￥";
@@ -134,15 +102,15 @@ public class PlaceService {
         return null;
     }
 
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        double dLat = Math.toRadians(lat2 - lat1); double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    private double calculateDistance(double la1, double lo1, double la2, double lo2) {
+        double dLat = Math.toRadians(la2 - la1); double dLon = Math.toRadians(lo2 - lo1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(Math.toRadians(la1)) * Math.cos(Math.toRadians(la2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
         return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    private Comparator<PlaceResponse> getComparator(String sortBy, boolean hasGps) {
-        return switch (sortBy) {
-            case "distance" -> hasGps ? Comparator.comparing(PlaceResponse::distanceMeters, Comparator.nullsLast(Comparator.naturalOrder())) : Comparator.comparing(PlaceResponse::rating).reversed();
+    private Comparator<PlaceResponse> getComparator(String s, boolean h) {
+        return switch (s) {
+            case "distance" -> h ? Comparator.comparing(PlaceResponse::distanceMeters, Comparator.nullsLast(Comparator.naturalOrder())) : Comparator.comparing(PlaceResponse::rating).reversed();
             case "userRatingsTotal" -> Comparator.comparing(PlaceResponse::userRatingCount).reversed();
             default -> Comparator.comparing(PlaceResponse::rating).reversed();
         };

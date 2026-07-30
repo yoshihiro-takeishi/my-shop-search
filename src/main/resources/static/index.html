@@ -7,10 +7,51 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        :root { --brand: #4f46e5; --bg: #f8fafc; --card-bg: #ffffff; --text-main: #0f172a; --text-sub: #64748b; --input-bg: #f1f5f9; --border: #e2e8f0; --fav: #ef4444; --font-size-base: 14px; }
-        body.dark-mode { --bg: #0f172a; --card-bg: #1e293b; --text-main: #f1f5f9; --text-sub: #94a3b8; --input-bg: #334155; --border: #334155; }
+        :root { 
+            --brand: #4f46e5; 
+            /* 背景色を少し暗めのグレーにして、白いカードを浮かび上がらせる */
+            --bg: #e2e8f0;         
+            --card-bg: #ffffff; 
+            --text-main: #0f172a; 
+            --text-sub: #475569; 
+            --input-bg: #f8fafc; 
+            /* 境界線をハッキリとした濃いグレーに設定 */
+            --border: #475569;     
+            --fav: #ef4444; 
+            --font-size-base: 14px; 
+        }
+        /* ダークテーマ：枠線を際立たせるため、カードを少し明るく */
+        body.dark-mode { 
+            --bg: #020617; 
+            --card-bg: #1e293b; 
+            --text-main: #f8fafc; 
+            --text-sub: #94a3b8; 
+            --input-bg: #020617; 
+            --border: #64748b; 
+        }
+
         body.large-font { --font-size-base: 18px; }
-        body { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 0; font-size: var(--font-size-base); transition: background-color 0.3s, color 0.3s; }
+
+        body { 
+            font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; padding: 0; 
+            font-size: var(--font-size-base); 
+            transition: background-color 0.3s; 
+        }
+
+        .container { max-width: 850px; margin: 0 auto; padding: 15px 12px 100px; }
+
+        /* 検索パネルも枠をハッキリさせる */
+        .search-card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 24px; 
+            border: 2px solid var(--border); /* 枠を太く */
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.1); /* 立体的な影 */
+            margin-bottom: 30px; 
+        }
         .container { max-width: 800px; margin: 0 auto; padding: 10px 12px 100px; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 15px; }
         .header h1 { font-size: 1.2em; margin: 0; font-weight: 800; cursor: pointer; }
@@ -36,16 +77,92 @@
         .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
         #results { display: grid; grid-template-columns: 1fr; gap: 15px; }
         @media (min-width: 600px) { #results { grid-template-columns: 1fr 1fr; } }
-        .shop-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
-        .shop-img { width: 100%; height: 180px; object-fit: cover; background: #eee; }
-        .shop-content { padding: 14px; flex-grow: 1; display: flex; flex-direction: column; }
-        .shop-name { font-size: 1.1em; font-weight: 800; }
-        .shop-address { font-size: 0.75em; color: var(--text-sub); margin: 6px 0; display: flex; align-items: flex-start; gap: 4px; line-height: 1.4; }
-        .shop-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.75em; font-weight: 700; margin-bottom: 8px; }
-        .shop-meta i { color: #fbbf24; }
-        .review-box { font-size: 0.8em; font-style: italic; color: var(--text-sub); border-left: 3px solid var(--border); padding-left: 10px; margin: 12px 0; line-height: 1.5; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
-        .btn { padding: 10px; border-radius: 8px; text-decoration: none; text-align: center; font-size: 0.85em; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        /* 検索結果のカード：1件ごとに「枠」に閉じ込める */
+        .shop-card { 
+            background: var(--card-bg); 
+            border-radius: 20px; 
+            overflow: hidden; 
+            /* 境界線を2pxの太さにし、色も濃く設定 */
+            border: 2px solid var(--border); 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            /* 影を強くして「1枚のパネル」としての存在感を強調 */
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.1); 
+            margin-bottom: 10px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* ホバー/タップ時の反応を少し大きくして操作感を出す */
+        .shop-card:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        .shop-img { 
+            width: 100%; 
+            height: 190px; 
+            object-fit: cover; 
+            background: #cbd5e1; 
+            /* 画像と情報の境界にもハッキリとした線を入れる */
+            border-bottom: 2px solid var(--border);
+        }
+
+        .shop-content { 
+            padding: 18px; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .shop-name { 
+            font-size: 1.15em; 
+            font-weight: 900; /* より太く */
+            margin: 0 0 8px; 
+            line-height: 1.3;
+        }
+
+        .shop-address { 
+            font-size: 0.85em; 
+            color: var(--text-main); /* 住所も読みやすく濃く */
+            margin: 8px 0; 
+            padding: 8px;
+            background: var(--input-bg); /* 住所欄を背景色で囲ってさらに強調 */
+            border-radius: 8px;
+        }
+
+        .review-box { 
+            font-size: 0.8em; 
+            font-style: italic; 
+            color: var(--text-sub); 
+            border-left: 4px solid var(--brand); /* アクセントカラーの太線 */
+            padding-left: 10px; 
+            margin: 15px 0; 
+        }
+
+        .action-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            margin-top: auto; 
+            padding-top: 10px;
+        }
+
+        /* ボタン類も枠線をつけて「ボタンらしさ」を強調 */
+        .btn { 
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 2px solid var(--border); 
+            font-weight: 800; 
+        }
+        
+        /* 公式サイトボタン */
+        .btn-web { 
+            grid-column: span 2; 
+            background: #fef3c7 !important; /* 薄い黄色 */
+            color: #92400e !important; 
+            border-color: #f59e0b !important;
+        }
         .btn-sub { background: var(--input-bg); color: var(--text-main); }
         .btn-main { background: var(--brand); color: #ffffff !important; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; padding: 20px; }
@@ -190,34 +307,54 @@
         finally { btn.disabled = false; bText.style.display = 'block'; bLoad.style.display = 'none'; }
     }
 
+// renderShops 関数の中身を以下の最新版に差し替えてください
     function renderShops(shops) {
         const resDiv = document.getElementById('results');
         if (shops.length === 0) { resDiv.innerHTML = '<p style="text-align:center; padding:40px; color:var(--text-sub);">見つかりませんでした</p>'; return; }
         const mode = document.getElementById('travelMode').value;
+
         resDiv.innerHTML = shops.map(shop => {
             const isFav = !!favorites[shop.id];
-            const openStatus = shop.openNow === true ? '<span style="color:#10b981; font-weight:bold;">● 営業中</span>' : (shop.openNow === false ? '<span style="color:#ef4444; font-weight:bold;">× 営業時間外</span>' : '');
-            const hoursHtml = shop.businessHours ? `<details><summary>営業時間・定休日を確認</summary><div class="hours-list">${shop.businessHours.join('<br>')}</div></details>` : '';
+            const openStatus = shop.openNow === true ? '<span style="color:#10b981; font-weight:bold;">● 営業中</span>' : (shop.openNow === false ? '<span style="color:#ef4444; font-weight:bold;">× 本日終了</span>' : '');
+            const imgUrl = shop.photoReference ? `/api/places/photo?photoName=${shop.photoReference}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80';
+            const hoursHtml = shop.businessHours ? `<details style="font-size:0.75em; margin-top:8px; color:var(--text-sub);"><summary style="cursor:pointer; color:var(--brand); outline:none;">営業時間・定休日を確認</summary><div style="padding:10px; background:var(--input-bg); border-radius:10px; margin-top:5px; line-height:1.6;">${shop.businessHours.join('<br>')}</div></details>` : '';
+            const reviewHtml = shop.reviewSnippet ? `<div class="review-box">"${shop.reviewSnippet.substring(0,80)}..."</div>` : '';
+            
+            // メニューURLの優先順位
+            const menuTargetUrl = shop.menuUri ? shop.menuUri : shop.googleMapsUrl;
+
             return `
             <div class="shop-card">
-                <button class="fav-btn" style="color:${isFav?'var(--fav)':'#cbd5e1'}" data-shop="${encodeURIComponent(JSON.stringify(shop))}" onclick="toggleFav('${shop.id}', this)"><i class="fa-solid fa-heart"></i></button>
-                <img class="shop-img" src="${shop.photoReference ? `/api/places/photo?photoName=${shop.photoReference}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80'}" loading="lazy">
+                <button class="fav-btn" style="color:${isFav ? 'var(--fav)' : '#cbd5e1'}" data-shop="${encodeURIComponent(JSON.stringify(shop))}" onclick="toggleFavorite('${shop.id}', this)"><i class="fa-solid fa-heart"></i></button>
+                <img class="shop-img" src="${imgUrl}" loading="lazy">
                 <div class="shop-content">
-                    <p class="shop-name">${shop.name} <small style="color:var(--brand);">${shop.priceLevel||''}</small></p>
-                    <div class="shop-address"><i class="fa-solid fa-location-dot"></i> <span>${shop.address || '住所なし'}</span></div>
-                    <div class="shop-meta"><span><i class="fa-solid fa-star"></i> ${shop.rating || '--'}</span><span>(${shop.userRatingCount}件)</span>${shop.distanceMeters ? `<span>📍 約${shop.distanceMeters}m</span>` : ''}</div>
-                    <div style="font-size:0.8em; margin-bottom:10px;">${openStatus} <span style="color:var(--text-sub); margin-left:5px;">${shop.summary||''}</span></div>
-                    ${shop.reviewSnippet ? `<div class="review-box">"${shop.reviewSnippet.substring(0,60)}..."</div>` : ''}
-                    ${hoursHtml}
-                    <div class="action-grid">
-                        <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-sub">地図・詳細</a>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-main">ルート案内</a>
-                        <!-- メニュー・写真ボタンを追加 -->
-                        <a href="${menuTargetUrl}" target="_blank" class="btn btn-menu">
-                            <i class="fa-solid fa-utensils"></i> メニュー・写真を確認
-                        </a>
-                        ${shop.websiteUri ? `<a href="${shop.websiteUri}" target="_blank" class="btn btn-web">公式サイト</a>` : ''}
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                        <p class="shop-name">${shop.name}</p>
+                        <span style="font-weight:bold; color:var(--brand); font-size:0.9em; white-space:nowrap;">${shop.priceLevel || ''}</span>
                     </div>
+                    <div class="shop-address"><i class="fa-solid fa-location-dot"></i> <span>${shop.address || '住所なし'}</span></div>
+                    <div style="font-size:0.75em; margin-bottom:8px;">${openStatus} <span style="color:var(--text-sub); margin-left:5px;">${shop.summary || ''}</span></div>
+                    
+                    <div class="shop-meta">
+                        <span><i class="fa-solid fa-star" style="color:#fbbf24;"></i> ${shop.rating || '--'}</span>
+                        <span>(${shop.userRatingCount}件)</span>
+                        ${shop.distanceMeters ? `<span>📍 約${shop.distanceMeters}m</span>` : ''}
+                    </div>
+
+                    ${reviewHtml}
+                    ${hoursHtml}
+
+                // renderShops 関数内のボタン部分を以下に差し替え
+                <div class="action-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+                    <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-sub">地図・詳細</a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-main">ルート案内</a>
+                    
+                    <!-- Googleマップの店舗ページなら大抵メニュー写真があるので、そこへ誘導 -->
+                    <a href="${shop.googleMapsUrl}" target="_blank" class="btn" style="grid-column: span 2; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; margin-top: 4px;">
+                        <i class="fa-solid fa-utensils"></i> メニュー・写真を確認
+                    </a>
+
+                    ${shop.websiteUri ? `<a href="${shop.websiteUri}" target="_blank" class="btn btn-sub" style="grid-column: span 2; margin-top:4px;"><i class="fa-solid fa-globe"></i> 公式サイト</a>` : ''}
                 </div>
             </div>`;
         }).join('');
