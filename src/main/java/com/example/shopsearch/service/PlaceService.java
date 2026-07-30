@@ -63,7 +63,7 @@ public class PlaceService {
         try {
             var response = restClient.post().uri("/places:searchText")
                 .header("X-Goog-Api-Key", apiKey)
-                .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours")
+                .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours,places.menuUri")
                 .body(requestBody).retrieve().body(Map.class);
 
             if (response == null || !response.containsKey("places")) return Collections.emptyList();
@@ -96,7 +96,9 @@ public class PlaceService {
                 return new PlaceResponse(
                     id, name, convertToDouble(p.get("rating")), convertToInteger(p.get("userRatingCount")),
                     (String) p.get("formattedAddress"), (String) p.get("googleMapsUri"),
-                    dist, photoRef, pLat, pLng, formatPriceLevel(p.get("priceLevel")), isOpen, summary, (String) p.get("websiteUri"), review, weekdayText
+                    dist, photoRef, pLat, pLng, formatPriceLevel(p.get("priceLevel")), isOpen, summary, 
+                    (String) p.get("websiteUri"), review, weekdayText,
+                    (String) p.get("menuUri") // 追加
                 );
             })
             // 【重要】サーバー側で距離フィルタリングを実行

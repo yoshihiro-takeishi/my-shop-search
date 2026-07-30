@@ -56,7 +56,9 @@
         details summary { cursor: pointer; color: var(--brand); font-size: 0.8em; font-weight: 700; outline: none; margin-bottom: 5px; }
         .hours-list { padding: 10px; background: var(--input-bg); border-radius: 10px; font-size: 0.75em; line-height: 1.7; color: var(--text-sub); }
         .fav-btn { position: absolute; top: 12px; right: 12px; background: white; border: none; width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 1.1em; transition: 0.2s; }
-    </style>
+        .btn-menu { grid-column: span 2; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; margin-top: 4px;}
+        .btn-menu:active { background: #fef3c7; }
+</style>
 </head>
 <body id="mainBody">
 <div class="container">
@@ -210,6 +212,11 @@
                     <div class="action-grid">
                         <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-sub">地図・詳細</a>
                         <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-main">ルート案内</a>
+                        <!-- メニュー・写真ボタンを追加 -->
+                        <a href="${menuTargetUrl}" target="_blank" class="btn btn-menu">
+                            <i class="fa-solid fa-utensils"></i> メニュー・写真を確認
+                        </a>
+                        ${shop.websiteUri ? `<a href="${shop.websiteUri}" target="_blank" class="btn btn-web">公式サイト</a>` : ''}
                     </div>
                 </div>
             </div>`;

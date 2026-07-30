@@ -17,5 +17,6 @@ public record PlaceResponse(
     String summary,
     String websiteUri,
     String reviewSnippet,
-    List<String> businessHours
+    List<String> businessHours,
+    String menuUri // 追加：メニュー用URL
 ) {}
