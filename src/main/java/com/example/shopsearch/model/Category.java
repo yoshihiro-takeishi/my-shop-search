@@ -5,5 +5,6 @@ public record Category(
     String id, 
     String label, 
     List<String> keywords,
-    String icon // FontAwesomeのクラス名
+    String icon,
+    String groupName // 大グループ名
 ) {}
