@@ -8,218 +8,106 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root { 
-            --brand: #4f46e5; 
-            /* 背景色を少し暗めのグレーにして、白いカードを浮かび上がらせる */
-            --bg: #e2e8f0;         
-            --card-bg: #ffffff; 
-            --text-main: #0f172a; 
-            --text-sub: #475569; 
-            --input-bg: #f8fafc; 
-            /* 境界線をハッキリとした濃いグレーに設定 */
-            --border: #475569;     
-            --fav: #ef4444; 
-            --font-size-base: 14px; 
+            --brand: #4f46e5; --bg: #e2e8f0; --card-bg: #ffffff; --text-main: #1e293b; 
+            --text-sub: #64748b; --border: #0f172a; --fav: #ef4444; --font-size-base: 14px;
         }
-        /* ダークテーマ：枠線を際立たせるため、カードを少し明るく */
-        body.dark-mode { 
-            --bg: #020617; 
-            --card-bg: #1e293b; 
-            --text-main: #f8fafc; 
-            --text-sub: #94a3b8; 
-            --input-bg: #020617; 
-            --border: #64748b; 
-        }
-
+        body.dark-mode { --bg: #020617; --card-bg: #1e293b; --text-main: #f8fafc; --text-sub: #94a3b8; --border: #ffffff; }
         body.large-font { --font-size-base: 18px; }
+        body { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; background-color: var(--bg); color: var(--text-main); font-size: var(--font-size-base); transition: 0.3s; margin: 0; }
 
-        body { 
-            font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; 
-            background-color: var(--bg); 
-            color: var(--text-main); 
-            margin: 0; padding: 0; 
-            font-size: var(--font-size-base); 
-            transition: background-color 0.3s; 
-        }
-
-        .container { max-width: 850px; margin: 0 auto; padding: 15px 12px 100px; }
-
-        /* 検索パネルも枠をハッキリさせる */
-        .search-card { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 24px; 
-            border: 2px solid var(--border); /* 枠を太く */
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.1); /* 立体的な影 */
-            margin-bottom: 30px; 
-        }
-        .container { max-width: 800px; margin: 0 auto; padding: 10px 12px 100px; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 15px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 10px 12px 100px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 2.5px solid var(--border); margin-bottom: 20px; }
         .header h1 { font-size: 1.2em; margin: 0; font-weight: 800; cursor: pointer; }
-        .search-card { background: var(--card-bg); padding: 16px; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .label { font-size: 0.85em; font-weight: 800; margin-bottom: 8px; color: var(--text-sub); display: flex; align-items: center; gap: 4px; }
-        .input-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .input-wrapper { position: relative; flex: 1; }
-        .input-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-sub); font-size: 0.9em; }
-        input[type="text"] { width: 100%; padding: 10px 10px 10px 34px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); font-size: 16px; color: var(--text-main); box-sizing: border-box; outline: none; }
-        .pin-btn { background: var(--input-bg); color: var(--brand); border: none; width: 44px; border-radius: 12px; cursor: pointer; }
+        
+        .search-card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 2.5px solid var(--border); margin-bottom: 30px; box-shadow: 4px 4px 0px rgba(0,0,0,0.1); }
+        .label { font-size: 0.75em; font-weight: 800; margin-bottom: 8px; color: var(--text-sub); display: flex; align-items: center; gap: 5px; }
+        input[type="text"], select { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--border); background: #f8fafc; font-size: 16px; font-weight: bold; box-sizing: border-box; outline: none; color: #000; }
+
         .chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; scrollbar-width: none; }
-        .chip { white-space: nowrap; padding: 8px 14px; background: var(--input-bg); border-radius: 20px; font-size: 0.8em; font-weight: 700; cursor: pointer; border: 1px solid var(--border); color: var(--text-sub); }
+        .chip { white-space: nowrap; padding: 8px 14px; background: #f1f5f9; border-radius: 20px; font-size: 0.75em; font-weight: 700; cursor: pointer; border: 2px solid var(--border); color: var(--text-sub); }
         .chip.active { background: var(--brand); color: white; border-color: var(--brand); }
+
         .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
         @media (min-width: 600px) { .category-grid { grid-template-columns: repeat(6, 1fr); } }
-        .cat-item { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60px; border-radius: 12px; background: var(--card-bg); cursor: pointer; border: 1px solid var(--border); transition: 0.2s; }
-        .cat-item span { font-size: 0.65em; font-weight: 700; margin-top: 2px; }
-        .cat-item.active { background: var(--brand); color: white; border-color: var(--brand); }
-        .filter-row { display: flex; gap: 8px; margin-bottom: 15px; }
-        .filter-btn { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); font-size: 0.8em; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-sub); }
-        .filter-btn.active { background: var(--brand); border-color: var(--brand); color: #ffffff; }
-        .search-btn { width: 100%; padding: 16px; border: none; border-radius: 16px; background: var(--brand); color: white !important; font-size: 1.1em; font-weight: 800; cursor: pointer; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
-        .search-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-        #results { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        @media (min-width: 600px) { #results { grid-template-columns: 1fr 1fr; } }
-        /* 検索結果のカード：1件ごとに「枠」に閉じ込める */
-        .shop-card { 
-            background: var(--card-bg); 
-            border-radius: 20px; 
-            overflow: hidden; 
-            /* 境界線を2pxの太さにし、色も濃く設定 */
-            border: 2px solid var(--border); 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            /* 影を強くして「1枚のパネル」としての存在感を強調 */
-            box-shadow: 6px 6px 0px rgba(0,0,0,0.1); 
-            margin-bottom: 10px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+        .cat-item { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60px; border-radius: 12px; border: 2px solid var(--border); background: #f1f5f9; cursor: pointer; transition: 0.1s; }
+        .cat-item span { font-size: 0.65em; font-weight: 800; }
+        .cat-item.active { background: var(--brand); color: white; }
 
-        /* ホバー/タップ時の反応を少し大きくして操作感を出す */
-        .shop-card:active {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-        }
+        .filter-btn { flex: 1; padding: 10px; border-radius: 12px; border: 2px solid var(--border); background: #f8fafc; font-size: 0.8em; font-weight: 800; cursor: pointer; color: var(--text-sub); }
+        .filter-btn.active { background: var(--brand); color: #fff; }
 
-        .shop-img { 
-            width: 100%; 
-            height: 190px; 
-            object-fit: cover; 
-            background: #cbd5e1; 
-            /* 画像と情報の境界にもハッキリとした線を入れる */
-            border-bottom: 2px solid var(--border);
-        }
+        .search-btn { width: 100%; padding: 16px; border: 2.5px solid var(--border); border-radius: 16px; background: var(--brand); color: white !important; font-size: 1.1em; font-weight: 900; cursor: pointer; box-shadow: 4px 4px 0px rgba(0,0,0,0.2); }
+        .search-btn:disabled { opacity: 0.6; }
 
-        .shop-content { 
-            padding: 18px; 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-        }
+        /* 結果リスト：升目（タイル） */
+        #results { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (min-width: 768px) { #results { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
 
-        .shop-name { 
-            font-size: 1.15em; 
-            font-weight: 900; /* より太く */
-            margin: 0 0 8px; 
-            line-height: 1.3;
-        }
+        .shop-card { background: var(--card-bg); border-radius: 12px; border: 2.5px solid var(--border); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .shop-img { width: 100%; height: 120px; object-fit: cover; border-bottom: 2.5px solid var(--border); }
+        .shop-content { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+        .shop-name { font-size: 0.95em; font-weight: 900; margin: 0 0 5px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.4em; }
 
-        .shop-address { 
-            font-size: 0.85em; 
-            color: var(--text-main); /* 住所も読みやすく濃く */
-            margin: 8px 0; 
-            padding: 8px;
-            background: var(--input-bg); /* 住所欄を背景色で囲ってさらに強調 */
-            border-radius: 8px;
-        }
+        .amenity-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+        .amenity-tag { font-size: 0.55em; font-weight: 800; padding: 1px 4px; border-radius: 4px; background: #eef2ff; color: var(--brand); border: 1px solid var(--brand); }
 
-        .review-box { 
-            font-size: 0.8em; 
-            font-style: italic; 
-            color: var(--text-sub); 
-            border-left: 4px solid var(--brand); /* アクセントカラーの太線 */
-            padding-left: 10px; 
-            margin: 15px 0; 
-        }
+        .shop-address { font-size: 0.7em; color: var(--text-sub); margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .shop-meta { font-size: 0.7em; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; }
+        .shop-meta i { color: #fbbf24; }
 
-        .action-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 10px; 
-            margin-top: auto; 
-            padding-top: 10px;
-        }
+        .review-box { font-size: 0.65em; font-style: italic; color: var(--text-sub); border-left: 3px solid var(--border); padding-left: 6px; margin: 8px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-        /* ボタン類も枠線をつけて「ボタンらしさ」を強調 */
-        .btn { 
-            padding: 12px; 
-            border-radius: 10px; 
-            border: 2px solid var(--border); 
-            font-weight: 800; 
-        }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: auto; }
+        .btn { padding: 10px 4px; border-radius: 8px; border: 2.5px solid var(--border); font-size: 0.8em; font-weight: 900; text-decoration: none; text-align: center; display: flex; align-items: center; justify-content: center; }
+        .btn-main { background: var(--brand); color: #fff !important; }
+        .btn-sub { background: #fff; color: var(--text-main); }
         
-        /* 公式サイトボタン */
-        .btn-web { 
-            grid-column: span 2; 
-            background: #fef3c7 !important; /* 薄い黄色 */
-            color: #92400e !important; 
-            border-color: #f59e0b !important;
-        }
-        .btn-sub { background: var(--input-bg); color: var(--text-main); }
-        .btn-main { background: var(--brand); color: #ffffff !important; }
+        .fav-btn { position: absolute; top: 8px; right: 8px; background: white; border: 2.5px solid var(--border); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 5; font-size: 1em; }
+        
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; padding: 20px; }
-        .modal-content { background: var(--card-bg); border-radius: 24px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; max-width: 500px; margin: 0 auto; color: var(--text-main); }
-        .modal-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-content { background: var(--card-bg); border-radius: 24px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; max-width: 500px; margin: 0 auto; border: 2.5px solid var(--border); }
+        .modal-header { padding: 16px; border-bottom: 2.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .modal-body { flex: 1; overflow-y: auto; padding: 16px; }
-        .setting-toggle { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
-        details summary { cursor: pointer; color: var(--brand); font-size: 0.8em; font-weight: 700; outline: none; margin-bottom: 5px; }
-        .hours-list { padding: 10px; background: var(--input-bg); border-radius: 10px; font-size: 0.75em; line-height: 1.7; color: var(--text-sub); }
-        .fav-btn { position: absolute; top: 12px; right: 12px; background: white; border: none; width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 1.1em; transition: 0.2s; }
-        .btn-menu { grid-column: span 2; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; margin-top: 4px;}
-        .btn-menu:active { background: #fef3c7; }
-</style>
+        .setting-toggle { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--text-sub); }
+        details summary { cursor: pointer; color: var(--brand); font-size: 0.7em; font-weight: 800; outline: none; margin-bottom: 4px; }
+    </style>
 </head>
 <body id="mainBody">
 <div class="container">
     <div class="header">
-        <h1 onclick="location.reload()"><i class="fa-solid fa-compass" style="color:var(--brand);"></i> お店探しナビ</h1>
+        <h1 onclick="location.reload()"><i class="fa-solid fa-compass"></i> お店探し</h1>
         <div>
-            <button onclick="openModal()" style="border:none; background:none; font-size:1.2em; color:var(--text-sub); cursor:pointer; margin-right:12px;"><i class="fa-solid fa-gear"></i></button>
-            <button id="favModeBtn" onclick="toggleFavMode()" style="border:none; background:none; font-size:1.3em; color:var(--fav); cursor:pointer;"><i class="fa-regular fa-heart"></i></button>
+            <button onclick="openModal()" style="border:none; background:none; font-size:1.2em; color:var(--text-sub); cursor:pointer;"><i class="fa-solid fa-gear"></i></button>
+            <button id="favModeBtn" onclick="toggleFavMode()" style="border:none; background:none; font-size:1.2em; color:var(--fav); cursor:pointer;"><i class="fa-regular fa-heart"></i></button>
         </div>
     </div>
+
     <form onsubmit="handleFormSubmit(event)" id="searchPanel" class="search-card">
-        <div class="label">どこで？</div>
-        <div class="input-row">
-            <div class="input-wrapper"><i class="fa-solid fa-location-dot"></i><input type="text" id="areaInput" placeholder="現在地、または駅名" enterkeyhint="search"></div>
-            <button type="button" class="pin-btn" onclick="saveCurrentPlace()"><i class="fa-solid fa-thumbtack"></i></button>
+        <div class="input-row" style="display:flex; gap:8px; margin-bottom:12px;">
+            <div style="position:relative; flex:1;">
+                <i class="fa-solid fa-location-dot" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-sub);"></i>
+                <input type="text" id="areaInput" placeholder="場所" style="padding-left:34px;">
+            </div>
+            <button type="button" onclick="saveCurrentPlace()" style="width:48px; border-radius:12px; border:2.5px solid var(--border); background:#fff;"><i class="fa-solid fa-thumbtack"></i></button>
         </div>
-        <div id="myPlacesRow" class="chip-row">
-            <div class="chip active" id="chip-current" onclick="useMyLocation()">🛰️ 現在地</div>
+        <div id="myPlacesRow" class="chip-row"></div>
+        <div style="position:relative; margin-bottom:12px;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-sub);"></i>
+            <input type="text" id="storeInput" placeholder="店名・キーワード" style="padding-left:34px;">
         </div>
-        <div class="label">店名・キーワード</div>
-        <div class="input-group"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="storeInput" placeholder="例：サイゼリヤ" enterkeyhint="search"></div>
         <div id="categoryGrid" class="category-grid"></div>
-        <div class="filter-row">
-            <button type="button" id="btn-openNow" class="filter-btn" onclick="toggleFilter('openNow')"><i class="fa-solid fa-clock"></i> 営業中のみ</button>
-            <button type="button" id="btn-independent" class="filter-btn" onclick="toggleFilter('independentOnly')"><i class="fa-solid fa-store"></i> 個人店優先</button>
+        <div style="display:flex; gap:8px; margin-bottom:15px;">
+            <button type="button" id="btn-openNow" class="filter-btn" onclick="toggleFilter('openNow')">🕒 営業中</button>
+            <button type="button" id="btn-independent" class="filter-btn" onclick="toggleFilter('independentOnly')">🏠 個人店</button>
         </div>
         <button type="submit" id="searchExecBtn" class="search-btn">
-            <span id="btnText"><i class="fa-solid fa-magnifying-glass"></i> 検索を開始</span>
-            <span id="btnLoading" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i> 読込中...</span>
+            <span id="btnText">検索を開始</span>
+            <span id="btnLoading" style="display:none;"><i class="fa-solid fa-spinner fa-spin"></i> 読込中</span>
         </button>
-        <div style="display:flex; gap:8px; margin-top:12px;">
-            <select id="sortBy" onchange="saveSettings()" style="flex:1; padding:8px; border-radius:8px; border: 1px solid var(--border); font-size:0.8em;">
-                <option value="rating">評価順</option>
-                <option value="distance">近い順</option>
-                <option value="userRatingsTotal">人気順</option> <!-- 名前を人気順に変更 -->
-            </select>
-            <select id="radiusRange" onchange="saveSettings()" style="flex:1; padding:8px; border-radius:8px; border: 1px solid var(--border); font-size:0.8em;">
-                <option value="1000">1km</option>
-                <option value="3000">3km</option>
-                <option value="5000" selected>5km</option>
-                <option value="10000">10km</option> <!-- 追加 -->
-                <option value="20000">20km</option> <!-- 追加 -->
-            </select>
-            <select id="travelMode" onchange="saveSettings()" style="flex:1; padding:8px; border-radius:8px; border: 1px solid var(--border); font-size:0.8em;"><option value="walking">徒歩</option><option value="driving">車</option><option value="transit">公共</option></select>
+        <div style="display:flex; gap:8px; margin-top:15px;">
+            <select id="sortBy" onchange="saveSettings()" style="flex:1;"><option value="rating">評価順</option><option value="distance">近い順</option><option value="userRatingsTotal">人気順</option></select>
+            <select id="radiusRange" onchange="saveSettings()" style="flex:1;"><option value="1000">1km</option><option value="5000" selected>5km</option><option value="10000">10km</option><option value="20000">20km</option></select>
+            <select id="travelMode" onchange="saveSettings()" style="flex:1;"><option value="walking">徒歩</option><option value="driving">車</option><option value="transit">公共</option></select>
         </div>
     </form>
     <div id="results"></div>
@@ -227,13 +115,13 @@
 
 <div id="configModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h2 style="font-size:1em; margin:0;">アプリ設定</h2><button onclick="closeModal()" style="border:none; background:var(--input-bg); padding:8px 15px; border-radius:10px; font-weight:bold; cursor:pointer;">完了</button></div>
+        <div class="modal-header"><h2>アプリ設定</h2><button onclick="closeModal()" style="border:none; background:var(--bg); padding:8px 15px; border-radius:10px; font-weight:bold;">完了</button></div>
         <div class="modal-body">
-            <h3 style="font-size:0.9em; color:var(--brand); border-bottom:1px solid var(--border);">表示スタイル</h3>
-            <div class="setting-toggle"><span>ダークモード</span><input type="checkbox" id="themeSwitch" onchange="updateTheme(this.checked)" style="width:20px; height:20px;"></div>
-            <div class="setting-toggle"><span>文字を大きくする</span><input type="checkbox" id="fontSwitch" onchange="updateFontSize(this.checked)" style="width:20px; height:20px;"></div>
-            <h3 style="font-size:0.9em; color:var(--brand); border-bottom:1px solid var(--border); margin-top:20px;">表示ジャンル</h3><div id="catSettingsList"></div>
-            <h3 style="font-size:0.9em; color:var(--brand); border-bottom:1px solid var(--border); margin-top:20px;">マイ地点</h3><div id="placeSettingsList"></div>
+            <h3 style="font-size:0.9em; color:var(--brand);">表示スタイル</h3>
+            <div class="setting-toggle"><span>ダークモード</span><input type="checkbox" id="themeSwitch" onchange="updateTheme(this.checked)" style="width:22px; height:22px;"></div>
+            <div class="setting-toggle"><span>文字を大きくする</span><input type="checkbox" id="fontSwitch" onchange="updateFontSize(this.checked)" style="width:22px; height:22px;"></div>
+            <h3 style="font-size:0.9em; color:var(--brand); margin-top:20px;">表示ジャンル</h3><div id="catSettingsList"></div>
+            <h3 style="font-size:0.9em; color:var(--brand); margin-top:20px;">マイ地点</h3><div id="placeSettingsList"></div>
         </div>
     </div>
 </div>
@@ -242,7 +130,7 @@
     let userLoc = null, selectedCats = new Set(), allCats = [];
     let hiddenCats = JSON.parse(localStorage.getItem('hidden_cats') || '[]');
     let myPlaces = JSON.parse(localStorage.getItem('my_places_v2') || '[]');
-    let favorites = JSON.parse(localStorage.getItem('my_fav_v9') || '{}');
+    let favorites = JSON.parse(localStorage.getItem('my_fav_v10') || '{}');
     let filters = { openNow: false, independentOnly: false };
     let isFavMode = false, activePlaceIdx = null;
 
@@ -253,28 +141,28 @@
     function renderGrids() {
         const grid = document.getElementById('categoryGrid'); grid.innerHTML = '';
         allCats.forEach(cat => { if (hiddenCats.includes(cat.id)) return; const item = document.createElement('div'); item.className = `cat-item ${selectedCats.has(cat.id) ? 'active' : ''}`; item.innerHTML = `<i class="fa-solid ${cat.icon}"></i><span>${cat.label}</span>`; item.onclick = () => { selectedCats.has(cat.id) ? selectedCats.delete(cat.id) : selectedCats.add(cat.id); item.classList.toggle('active'); }; grid.appendChild(item); });
-        document.getElementById('catSettingsList').innerHTML = allCats.map(cat => `<label style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:0.9em;"><input type="checkbox" ${!hiddenCats.includes(cat.id) ? 'checked' : ''} onchange="toggleCatVisibility('${cat.id}', this.checked)" style="margin-right:12px; width:18px; height:18px;"> ${cat.label}</label>`).join('');
+        document.getElementById('catSettingsList').innerHTML = allCats.map(cat => `<label style="display:flex; align-items:center; padding:10px 0; border-bottom:1px solid #ddd; font-size:0.9em;"><input type="checkbox" ${!hiddenCats.includes(cat.id) ? 'checked' : ''} onchange="toggleCatVisibility('${cat.id}', this.checked)" style="margin-right:12px; width:20px; height:20px;"> ${cat.label}</label>`).join('');
     }
     function toggleCatVisibility(id, isVisible) { if (isVisible) hiddenCats = hiddenCats.filter(c => c !== id); else { hiddenCats.push(id); selectedCats.delete(id); } localStorage.setItem('hidden_cats', JSON.stringify(hiddenCats)); renderGrids(); }
     function renderMyPlaces() {
         const row = document.getElementById('myPlacesRow'); row.innerHTML = `<div class="chip ${activePlaceIdx === null ? 'active' : ''}" onclick="useMyLocation()">🛰️ 現在地</div>`;
         myPlaces.forEach((p, i) => { const chip = document.createElement('div'); chip.className = `chip ${activePlaceIdx === i ? 'active' : ''}`; chip.innerText = `📍 ${p.name}`; chip.onclick = () => useMyPlace(i); row.appendChild(chip); });
-        document.getElementById('placeSettingsList').innerHTML = myPlaces.map((p, i) => `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:0.85em;"><span><b>${p.name}</b><br><small style="color:var(--text-sub);">${p.display}</small></span><button onclick="deletePlace(${i})" style="color:var(--fav); border:none; background:none; padding:10px;"><i class="fa-solid fa-trash"></i></button></div>`).join('') || '<p style="text-align:center; padding:15px; font-size:0.8em; color:var(--text-sub);">登録地点はありません</p>';
+        document.getElementById('placeSettingsList').innerHTML = myPlaces.map((p, i) => `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #ddd;"><span><b>${p.name}</b></span><button onclick="deletePlace(${i})" style="color:var(--fav); border:none; background:none; padding:10px;"><i class="fa-solid fa-trash"></i></button></div>`).join('') || 'なし';
     }
-    function saveCurrentPlace() { const name = prompt("地点の名前を入力（例：自宅、職場）"); if (!name) return; const areaVal = document.getElementById('areaInput').value; const place = { name, display: areaVal || "現在地付近", val: areaVal, lat: areaVal ? null : userLoc?.lat, lng: areaVal ? null : userLoc?.lng }; myPlaces.push(place); localStorage.setItem('my_places_v2', JSON.stringify(myPlaces)); renderMyPlaces(); }
+    function saveCurrentPlace() { const name = prompt("名前（例：自宅）"); if (!name) return; const val = document.getElementById('areaInput').value; const p = { name, display: val || "現在地", val: val, lat: val ? null : userLoc?.lat, lng: val ? null : userLoc?.lng }; myPlaces.push(p); localStorage.setItem('my_places_v2', JSON.stringify(myPlaces)); renderMyPlaces(); }
     function useMyLocation() { activePlaceIdx = null; document.getElementById('areaInput').value = ''; renderMyPlaces(); }
-    function useMyPlace(i) { activePlaceIdx = i; const p = myPlaces[i]; document.getElementById('areaInput').value = p.val || ''; renderMyPlaces(); }
+    function useMyPlace(i) { activePlaceIdx = i; document.getElementById('areaInput').value = myPlaces[i].val || ''; renderMyPlaces(); }
     function deletePlace(i) { myPlaces.splice(i, 1); localStorage.setItem('my_places_v2', JSON.stringify(myPlaces)); renderMyPlaces(); }
-    function toggleFilter(key) { filters[key] = !filters[key]; document.getElementById(`btn-${key}`).classList.toggle('active'); saveSettings(); }
+    function toggleFilter(k) { filters[k] = !filters[k]; document.getElementById(`btn-${k}`).classList.toggle('active'); saveSettings(); }
     function openModal() { document.getElementById('configModal').style.display = 'block'; }
     function closeModal() { document.getElementById('configModal').style.display = 'none'; }
     function handleFormSubmit(e) { e.preventDefault(); document.activeElement.blur(); search(); }
 
     function toggleFav(id, btn) {
         const shop = JSON.parse(decodeURIComponent(btn.dataset.shop));
-        if (favorites[id]) { delete favorites[id]; btn.style.color = '#cbd5e1'; if (isFavMode) btn.closest('.shop-card').remove(); }
+        if (favorites[id]) { delete favorites[id]; btn.style.color = '#ccc'; if (isFavMode) btn.closest('.shop-card').remove(); }
         else { favorites[id] = shop; btn.style.color = 'var(--fav)'; }
-        localStorage.setItem('my_fav_v9', JSON.stringify(favorites));
+        localStorage.setItem('my_fav_v10', JSON.stringify(favorites));
     }
 
     function toggleFavMode() {
@@ -286,86 +174,64 @@
 
     async function search() {
         const store = document.getElementById('storeInput').value;
-        if (selectedCats.size === 0 && !store) return alert("気分か店名を入力してください");
-        const btn = document.getElementById('searchExecBtn'), bText = document.getElementById('btnText'), bLoad = document.getElementById('btnLoading');
-        btn.disabled = true; bText.style.display = 'none'; bLoad.style.display = 'block';
+        if (selectedCats.size === 0 && !store) return alert("気分か店名を入力");
+        const btn = document.getElementById('searchExecBtn'), bT = document.getElementById('btnText'), bL = document.getElementById('btnLoading');
+        btn.disabled = true; bT.style.display = 'none'; bL.style.display = 'block';
         saveSettings(); const resDiv = document.getElementById('results'); resDiv.innerHTML = '';
-        
         const params = new URLSearchParams({ sortBy: document.getElementById('sortBy').value, radius: document.getElementById('radiusRange').value, independentOnly: filters.independentOnly, openNow: filters.openNow });
-        selectedCats.forEach(id => params.append('categoryIds', id));
-        if (store) params.append('storeName', store);
-        
+        selectedCats.forEach(id => params.append('categoryIds', id)); if (store) params.append('storeName', store);
         let sLat = userLoc?.lat, sLng = userLoc?.lng, sLoc = document.getElementById('areaInput').value;
         if (activePlaceIdx !== null) { const p = myPlaces[activePlaceIdx]; if (p.lat) { sLat = p.lat; sLng = p.lng; sLoc = ''; } else { sLoc = p.val; } }
         if (sLat) params.append('lat', sLat); if (sLng) params.append('lng', sLng); if (sLoc) params.append('location', sLoc);
-
-        try {
-            const res = await fetch(`/api/places/search?${params.toString()}`);
-            renderShops(await res.json());
-            if (!isFavMode) resDiv.scrollIntoView({ behavior: 'smooth' });
-        } catch (e) { resDiv.innerHTML = 'エラー'; }
-        finally { btn.disabled = false; bText.style.display = 'block'; bLoad.style.display = 'none'; }
+        try { const res = await fetch(`/api/places/search?${params.toString()}`); renderShops(await res.json()); if (!isFavMode) resDiv.scrollIntoView({ behavior: 'smooth' }); } catch (e) { resDiv.innerHTML = 'エラー'; }
+        finally { btn.disabled = false; bT.style.display = 'block'; bL.style.display = 'none'; }
     }
 
-// renderShops 関数の中身を以下の最新版に差し替えてください
     function renderShops(shops) {
         const resDiv = document.getElementById('results');
-        if (shops.length === 0) { resDiv.innerHTML = '<p style="text-align:center; padding:40px; color:var(--text-sub);">見つかりませんでした</p>'; return; }
+        if (shops.length === 0) { resDiv.innerHTML = '<p style="grid-column:span 2; text-align:center; padding:40px;">なし</p>'; return; }
         const mode = document.getElementById('travelMode').value;
-
         resDiv.innerHTML = shops.map(shop => {
             const isFav = !!favorites[shop.id];
-            const openStatus = shop.openNow === true ? '<span style="color:#10b981; font-weight:bold;">● 営業中</span>' : (shop.openNow === false ? '<span style="color:#ef4444; font-weight:bold;">× 本日終了</span>' : '');
-            const imgUrl = shop.photoReference ? `/api/places/photo?photoName=${shop.photoReference}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80';
-            const hoursHtml = shop.businessHours ? `<details style="font-size:0.75em; margin-top:8px; color:var(--text-sub);"><summary style="cursor:pointer; color:var(--brand); outline:none;">営業時間・定休日を確認</summary><div style="padding:10px; background:var(--input-bg); border-radius:10px; margin-top:5px; line-height:1.6;">${shop.businessHours.join('<br>')}</div></details>` : '';
-            const reviewHtml = shop.reviewSnippet ? `<div class="review-box">"${shop.reviewSnippet.substring(0,80)}..."</div>` : '';
+            const imgUrl = shop.photoReference ? `/api/places/photo?photoName=${shop.photoReference}` : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&q=80';
+            const openS = shop.openNow === true ? '<span style="color:#10b981; font-weight:bold;">● 営業中</span>' : (shop.openNow === false ? '<span style="color:#ef4444; font-weight:bold;">× 終了</span>' : '');
+            const hoursH = shop.businessHours ? `<details><summary>営業時間・定休日</summary><div class="hours-list">${shop.businessHours.join('<br>')}</div></details>` : '';
             
-            // メニューURLの優先順位
-            const menuTargetUrl = shop.menuUri ? shop.menuUri : shop.googleMapsUrl;
+            let tags = '';
+            if (shop.hasParking) tags += '<span class="amenity-tag">🚗 駐車場</span>';
+            if (shop.reservable) tags += '<span class="amenity-tag">📅 予約可</span>';
+            if (shop.outdoorSeating) tags += '<span class="amenity-tag">🌞 テラス</span>';
+            if (shop.goodForGroups) tags += '<span class="amenity-tag">👥 団体</span>';
 
             return `
             <div class="shop-card">
-                <button class="fav-btn" style="color:${isFav ? 'var(--fav)' : '#cbd5e1'}" data-shop="${encodeURIComponent(JSON.stringify(shop))}" onclick="toggleFavorite('${shop.id}', this)"><i class="fa-solid fa-heart"></i></button>
+                <button class="fav-btn" style="color:${isFav?'var(--fav)':'#ccc'}" data-shop="${encodeURIComponent(JSON.stringify(shop))}" onclick="toggleFav('${shop.id}', this)"><i class="fa-solid fa-heart"></i></button>
                 <img class="shop-img" src="${imgUrl}" loading="lazy">
                 <div class="shop-content">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-                        <p class="shop-name">${shop.name}</p>
-                        <span style="font-weight:bold; color:var(--brand); font-size:0.9em; white-space:nowrap;">${shop.priceLevel || ''}</span>
+                    <p class="shop-name">${shop.name}</p>
+                    <div class="amenity-row">${tags}</div>
+                    <div class="shop-address"><i class="fa-solid fa-location-dot"></i> ${shop.address || '住所なし'}</div>
+                    <div class="shop-meta"><span><i class="fa-solid fa-star"></i> ${shop.rating||'--'}</span><span style="margin-left:5px;">(${shop.userRatingCount})</span></div>
+                    <div style="font-size:0.7em; margin-bottom:5px;">${openS} <b style="color:var(--brand);">${shop.priceLevel||''}</b></div>
+                    ${shop.reviewSnippet ? `<div class="review-box">"${shop.reviewSnippet.substring(0,40)}..."</div>` : ''}
+                    ${hoursH}
+                    <div class="btn-grid">
+                        <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-sub">地図</a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-main">ルート</a>
                     </div>
-                    <div class="shop-address"><i class="fa-solid fa-location-dot"></i> <span>${shop.address || '住所なし'}</span></div>
-                    <div style="font-size:0.75em; margin-bottom:8px;">${openStatus} <span style="color:var(--text-sub); margin-left:5px;">${shop.summary || ''}</span></div>
-                    
-                    <div class="shop-meta">
-                        <span><i class="fa-solid fa-star" style="color:#fbbf24;"></i> ${shop.rating || '--'}</span>
-                        <span>(${shop.userRatingCount}件)</span>
-                        ${shop.distanceMeters ? `<span>📍 約${shop.distanceMeters}m</span>` : ''}
-                    </div>
-
-                    ${reviewHtml}
-                    ${hoursHtml}
-
-                // renderShops 関数内のボタン部分を以下に差し替え
-                <div class="action-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
-                    <a href="${shop.googleMapsUrl}" target="_blank" class="btn btn-sub">地図・詳細</a>
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lng}&travelmode=${mode}" target="_blank" class="btn btn-main">ルート案内</a>
-                    
-                    <!-- Googleマップの店舗ページなら大抵メニュー写真があるので、そこへ誘導 -->
-                    <a href="${shop.googleMapsUrl}" target="_blank" class="btn" style="grid-column: span 2; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; margin-top: 4px;">
-                        <i class="fa-solid fa-utensils"></i> メニュー・写真を確認
-                    </a>
-
-                    ${shop.websiteUri ? `<a href="${shop.websiteUri}" target="_blank" class="btn btn-sub" style="grid-column: span 2; margin-top:4px;"><i class="fa-solid fa-globe"></i> 公式サイト</a>` : ''}
                 </div>
             </div>`;
         }).join('');
     }
 
     function saveSettings() {
-        const set = { sortBy: document.getElementById('sortBy').value, radius: document.getElementById('radiusRange').value, mode: document.getElementById('travelMode').value, independent: filters.independentOnly, openNow: filters.openNow, dark: document.getElementById('mainBody').classList.contains('dark-mode'), large: document.getElementById('mainBody').classList.contains('large-font') };
-        localStorage.setItem('shop_final_v9_pref', JSON.stringify(set));
+        localStorage.setItem('shop_final_v10_pref', JSON.stringify({ 
+            sortBy: document.getElementById('sortBy').value, radius: document.getElementById('radiusRange').value, mode: document.getElementById('travelMode').value, 
+            independent: filters.independentOnly, openNow: filters.openNow, dark: document.getElementById('mainBody').classList.contains('dark-mode'), large: document.getElementById('mainBody').classList.contains('large-font') 
+        }));
     }
     function loadSettings() {
-        const saved = JSON.parse(localStorage.getItem('shop_final_v9_pref') || '{}');
+        const saved = JSON.parse(localStorage.getItem('shop_final_v10_pref') || '{}');
         if (saved.sortBy) document.getElementById('sortBy').value = saved.sortBy;
         if (saved.radius) document.getElementById('radiusRange').value = saved.radius;
         if (saved.mode) document.getElementById('travelMode').value = saved.mode;

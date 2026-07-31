@@ -52,8 +52,8 @@ public class PlaceService {
         try {
             var response = restClient.post().uri("/places:searchText")
                 .header("X-Goog-Api-Key", apiKey)
-                // places.menuUri を削除
-                .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours")
+                // FieldMask に設備情報を追加
+                .header("X-Goog-FieldMask", "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.googleMapsUri,places.location,places.photos,places.priceLevel,places.currentOpeningHours,places.editorialSummary,places.websiteUri,places.reviews,places.regularOpeningHours,places.reservable,places.parkingOptions,places.outdoorSeating,places.goodForGroups")
                 .body(requestBody).retrieve().body(Map.class);
 
             if (response == null || !response.containsKey("places")) return Collections.emptyList();
@@ -65,13 +65,16 @@ public class PlaceService {
                 double pLat = ((Number) loc.get("latitude")).doubleValue();
                 double pLng = ((Number) loc.get("longitude")).doubleValue();
                 
+                // 駐車場の判定
+                boolean hasParking = false;
+                if (p.get("parkingOptions") instanceof Map<?, ?> pkg) {
+                    hasParking = Boolean.TRUE.equals(pkg.get("freeParkingLot")) || Boolean.TRUE.equals(pkg.get("paidParkingLot"));
+                }
+
                 String review = null;
                 if (p.get("reviews") instanceof List<?> rs && !rs.isEmpty()) {
                     if (rs.get(0) instanceof Map<?, ?> r && r.get("text") instanceof Map<?, ?> t) review = (String) t.get("text");
                 }
-
-                List<String> weekdayText = null;
-                if (p.get("regularOpeningHours") instanceof Map<?, ?> reg) weekdayText = (List<String>) reg.get("weekdayDescriptions");
 
                 return new PlaceResponse(
                     (String) p.get("id"),
@@ -84,7 +87,9 @@ public class PlaceService {
                     pLat, pLng, formatPriceLevel(p.get("priceLevel")),
                     (p.get("currentOpeningHours") instanceof Map<?, ?> cur) ? (Boolean) cur.get("openNow") : null,
                     (p.get("editorialSummary") instanceof Map<?, ?> sm) ? (String) sm.get("text") : null,
-                    (String) p.get("websiteUri"), review, weekdayText
+                    (String) p.get("websiteUri"), review, 
+                    (p.get("regularOpeningHours") instanceof Map<?, ?> reg) ? (List<String>) reg.get("weekdayDescriptions") : null,
+                    (Boolean) p.get("reservable"), hasParking, (Boolean) p.get("outdoorSeating"), (Boolean) p.get("goodForGroups")
                 );
             })
             .filter(dto -> (lat == null || radius == null || dto.distanceMeters() == null) ? true : dto.distanceMeters() <= (radius * 1.2))
@@ -97,8 +102,8 @@ public class PlaceService {
         String s = o.toString();
         if (s.contains("INEXPENSIVE")) return "￥";
         if (s.contains("MODERATE")) return "￥￥";
-        if (s.contains("VERY_EXPENSIVE")) return "￥￥￥￥";
         if (s.contains("EXPENSIVE")) return "￥￥￥";
+        if (s.contains("VERY_EXPENSIVE")) return "￥￥￥￥";
         return null;
     }
 

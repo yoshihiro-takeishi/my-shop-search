@@ -6,5 +6,10 @@ public record PlaceResponse(
     String address, String googleMapsUrl, Integer distanceMeters,
     String photoReference, Double lat, Double lng,
     String priceLevel, Boolean openNow, String summary,
-    String websiteUri, String reviewSnippet, List<String> businessHours
+    String websiteUri, String reviewSnippet, List<String> businessHours,
+    // --- 設備情報 ---
+    Boolean reservable,      // 予約可否
+    Boolean hasParking,     // 駐車場の有無
+    Boolean outdoorSeating, // テラス席
+    Boolean goodForGroups   // 大人数・グループ向き
 ) {}
