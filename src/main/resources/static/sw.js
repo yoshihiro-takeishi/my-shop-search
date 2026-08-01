@@ -1,5 +1,5 @@
 // index.htmlのAPP_VERSIONと合わせて更新してください
-const VERSION = "v1.3.0"; 
+const VERSION = "v1.3.1"; 
 const CACHE_NAME = `shop-nav-cache-${VERSION}`;
 
 const ASSETS = [
