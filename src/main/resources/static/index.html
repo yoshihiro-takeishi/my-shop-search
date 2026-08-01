@@ -77,6 +77,61 @@
         
         .fav-btn { position: absolute; top: 8px; right: 8px; background: white; border: 2.5px solid var(--border); width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 5; color: #ccc; }
         
+        /* フィルタボタンの基本（OFF状態） */
+        .filter-btn { 
+            flex: 1; /* 2つのボタンを50%ずつに広げる */
+            padding: 10px; 
+            border: 2.5px solid var(--border); 
+            border-radius: 12px; 
+            background: var(--input-bg); 
+            font-size: 0.75em; 
+            font-weight: 800; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px; 
+            color: var(--text-sub);
+            transition: 0.2s;
+            position: relative;
+        }
+
+        /* フィルタ行：横並び設定 */
+        .filter-row { 
+            display: flex; 
+            gap: 8px; 
+            margin: 15px 0; 
+        }
+
+        /* ONになった時に「✓」マークを右上にふわっと出す */
+        .filter-btn.active::after {
+            content: '\f00c'; /* FontAwesomeのチェックマーク */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            top: 2px;
+            right: 5px;
+            font-size: 0.8em;
+            color: white;
+        }
+
+        /* ★ 有効（ON状態）のスタイル：ブランドカラーで塗りつぶし、少し浮き上がらせる */
+        .filter-btn.active {
+            background: var(--brand) !important;
+            color: #ffffff !important;
+            border-color: var(--brand) !important;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* フィルタがONの時だけ表示するチェックマーク用のスタイル */
+        .filter-btn .check-mark {
+            display: none;
+        }
+        .filter-btn.active .check-mark {
+            display: inline;
+        }
+
         /* 設定モーダル */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; padding: 20px; }
         .modal-content { background: var(--card-bg); border-radius: 28px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; max-width: 500px; margin: 0 auto; border: 3px solid var(--border); }
@@ -124,9 +179,14 @@
 
         <div id="categoryGrid" class="category-grid"></div>
 
-        <div style="display:flex; gap:8px; margin:15px 0;">
-            <button type="button" id="btn-openNow" class="filter-btn" onclick="toggleFilter('openNow')">🕒 営業中</button>
-            <button type="button" id="btn-independent" class="filter-btn" onclick="toggleFilter('independentOnly')">🏠 個人店</button>
+        <div class="filter-row">
+            <!-- 引数を 'openNow' と 'independent' に統一 -->
+            <button type="button" id="btn-openNow" class="filter-btn" onclick="toggleFilter('openNow')">
+                <i class="fa-solid fa-clock"></i> 営業中
+            </button>
+            <button type="button" id="btn-independent" class="filter-btn" onclick="toggleFilter('independent')">
+                <i class="fa-solid fa-store"></i> 個人店
+            </button>
         </div>
 
         <button type="submit" id="searchExecBtn" class="search-btn">
@@ -170,11 +230,11 @@
     let hiddenCats = JSON.parse(localStorage.getItem('hidden_cats') || '[]');
     let myPlaces = JSON.parse(localStorage.getItem('my_places_v2') || '[]');
     let favorites = JSON.parse(localStorage.getItem('my_fav_v10') || '{}');
-    let filters = { openNow: false, independentOnly: false };
+    let filters = { openNow: false, independent: false};
     let isFavMode = false, activePlaceIdx = null;
 
     // ★ ここを更新するだけで全てが変わります
-    const APP_VERSION = "v1.2.0"; 
+    const APP_VERSION = "v1.3.0"; 
 
     window.onload = () => {
         // バージョン文字を画面に反映
@@ -264,7 +324,32 @@
     function useMyLocation() { activePlaceIdx = null; document.getElementById('areaInput').value = ''; renderMyPlaces(); }
     function useMyPlace(i) { activePlaceIdx = i; document.getElementById('areaInput').value = myPlaces[i].val || ''; renderMyPlaces(); }
     function deletePlace(i) { myPlaces.splice(i, 1); localStorage.setItem('my_places_v2', JSON.stringify(myPlaces)); renderMyPlaces(); }
-    function toggleFilter(k) { filters[k] = !filters[k]; document.getElementById(`btn-${k}`).classList.toggle('active'); saveSettings(); }
+    function toggleFilter(key) {
+        // 1. 状態を反転
+        filters[key] = !filters[key];
+        
+        // 2. 見た目を更新（ID: btn-independent または btn-openNow を確実に操作）
+        const btn = document.getElementById(`btn-${key}`);
+        if (filters[key]) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+        
+        // 3. 保存してボタンの文字（カウント）を更新
+        saveSettings();
+        updateSearchButtonLabel();
+    }
+    // 検索ボタンの文字を「絞り込み中」に変える演出
+    function updateSearchButtonLabel() {
+        const btnText = document.getElementById('btnText');
+        const activeCount = Object.values(filters).filter(v => v).length;
+        if (activeCount > 0) {
+            btnText.innerHTML = `<i class="fa-solid fa-filter"></i> 絞り込み中 (${activeCount})`;
+        } else {
+            btnText.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> 検索を開始`;
+        }
+    }
     function openModal() { document.getElementById('configModal').style.display = 'block'; }
     function closeModal() { document.getElementById('configModal').style.display = 'none'; }
     function handleFormSubmit(e) { e.preventDefault(); document.activeElement.blur(); search(); }
@@ -289,7 +374,12 @@
         const btn = document.getElementById('searchExecBtn'), bT = document.getElementById('btnText'), bL = document.getElementById('btnLoading');
         btn.disabled = true; bT.style.display = 'none'; bL.style.display = 'block';
         saveSettings(); const resDiv = document.getElementById('results'); resDiv.innerHTML = '';
-        const params = new URLSearchParams({ sortBy: document.getElementById('sortBy').value, radius: document.getElementById('radiusRange').value, independentOnly: filters.independentOnly, openNow: filters.openNow });
+        const params = new URLSearchParams({
+            sortBy: document.getElementById('sortBy').value,
+            radius: document.getElementById('radiusRange').value,
+            independentOnly: filters.independent, // ここを filters.independent に
+            openNow: filters.openNow
+        });
         selectedCats.forEach(id => params.append('categoryIds', id)); if (store) params.append('storeName', store);
         let sLat = userLoc?.lat, sLng = userLoc?.lng, sLoc = document.getElementById('areaInput').value;
         if (activePlaceIdx !== null) { const p = myPlaces[activePlaceIdx]; if (p.lat) { sLat = p.lat; sLng = p.lng; sLoc = ''; } else { sLoc = p.val; } }
@@ -334,15 +424,15 @@
     }
 
     function saveSettings() {
-        const s = { sortBy: document.getElementById('sortBy').value, radius: document.getElementById('radiusRange').value, mode: document.getElementById('travelMode').value, independent: filters.independentOnly, openNow: filters.openNow, dark: document.getElementById('mainBody').classList.contains('dark-mode'), large: document.getElementById('mainBody').classList.contains('large-font'), col1: document.getElementById('mainBody').classList.contains('layout-1col'), hidePic: document.getElementById('mainBody').classList.contains('hide-photos') };
-        localStorage.setItem('shop_final_v11_pref', JSON.stringify(s));
+        const s = { sortBy: document.getElementById('sortBy').value, radius: document.getElementById('radiusRange').value, mode: document.getElementById('travelMode').value, independent: filters.independent, openNow: filters.openNow, dark: document.getElementById('mainBody').classList.contains('dark-mode'), large: document.getElementById('mainBody').classList.contains('large-font'), col1: document.getElementById('mainBody').classList.contains('layout-1col'), hidePic: document.getElementById('mainBody').classList.contains('hide-photos') };
+        localStorage.setItem('shop_final_v12_pref', JSON.stringify(s));
     }
     function loadSettings() {
-        const saved = JSON.parse(localStorage.getItem('shop_final_v11_pref') || '{}');
+        const saved = JSON.parse(localStorage.getItem('shop_final_v12_pref') || '{}');
         if (saved.sortBy) document.getElementById('sortBy').value = saved.sortBy;
         if (saved.radius) document.getElementById('radiusRange').value = saved.radius;
         if (saved.mode) document.getElementById('travelMode').value = saved.mode;
-        if (saved.independent) { filters.independentOnly = true; document.getElementById('btn-independent').classList.add('active'); }
+        if (saved.independent) { filters.independent = true; document.getElementById('btn-independent').classList.add('active'); }
         if (saved.openNow) { filters.openNow = true; document.getElementById('btn-openNow').classList.add('active'); }
         if (saved.dark) { document.getElementById('mainBody').classList.add('dark-mode'); document.getElementById('themeSwitch').checked = true; }
         if (saved.large) { document.getElementById('mainBody').classList.add('large-font'); document.getElementById('fontSwitch').checked = true; }
